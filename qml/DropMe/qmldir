@@ -1,0 +1,5 @@
+module DropMe
+typeinfo serial.qmltypes
+typeinfo system_info.qmltypes
+typeinfo server.qmltypes
+typeinfo autoserial.qmltypes

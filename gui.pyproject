@@ -1,0 +1,32 @@
+{
+    "files": [
+        "src/gui/main.py",
+        "src/gui/system_info.py",
+        "src/gui/serial.py",
+        "src/gui/autoserial.py",
+        "src/gui/server.py",
+		"qml/DropMeQML/Clock.qml",
+		"qml/DropMeQML/EnterCredentialsView.qml",
+		"qml/DropMeQML/Global.qml",
+		"qml/DropMeQML/MainWindow.qml",
+		"qml/DropMeQML/MaintenanceView.qml",
+		"qml/DropMeQML/ProtocolTestView.qml",
+		"qml/DropMeQML/MultilingualResource.qml",
+		"qml/DropMeQML/MultilingualResourceButton.qml",
+		"qml/DropMeQML/Numpad.qml",
+		"qml/DropMeQML/PopupFinishedPhoneNumberRecycleView.qml",
+		"qml/DropMeQML/PopupFinishedQrCodeRecycleView.qml",
+		"qml/DropMeQML/PopupBinFullView.qml",
+		"qml/DropMeQML/PopupHandsView.qml",
+		"qml/DropMeQML/PopupNonRecyclableView.qml",
+		"qml/DropMeQML/PopupOutOfServiceView.qml",
+		"qml/DropMeQML/PopupTimeoutView.qml",
+		"qml/DropMeQML/RecycleView.qml",
+		"qml/DropMeQML/Resource.qml",
+		"qml/DropMeQML/ResourceButton.qml",
+		"qml/DropMeQML/SelectLanguageView.qml",
+		"qml/DropMeQML/Slides.qml",
+		"qml/DropMeQML/StartView.qml",
+		"qml/DropMeQML/Videos.qml"
+    ]
+}

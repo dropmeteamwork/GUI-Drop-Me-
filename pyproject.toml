@@ -1,0 +1,53 @@
+[project]
+name = "gui"
+version = "0.1.0"
+description = "Drop Me RVM Graphical User Interface"
+readme = "README.md"
+authors = [
+    { name = "Fares Ahmed Bakhit", email = "faresa.bakhit@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+  "boto3>=1.40.55",
+  "gitpython>=3.1.44",
+  "pyside6>=6.8.2.1",
+  "torch>=2.6.0",
+  "torchvision>=0.21.0",
+  "ultralytics>=8.3.73",
+]
+classifiers = ["Private :: Do Not Upload"]
+
+[project.scripts]
+build = "gui.scripts:build"
+lint = "gui.scripts:lint"
+
+[project.gui-scripts]
+gui = "gui.main:main"
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu" },
+]
+torchvision = [
+  { index = "pytorch-cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "lockfile>=0.12.2",
+    "pygithub>=2.5.0",
+    "pyserial>=3.5",
+    "python-daemon>=3.1.2",
+    "requests>=2.32.3",
+    "schedule>=1.2.2",
+    "semver>=3.0.4",
+]

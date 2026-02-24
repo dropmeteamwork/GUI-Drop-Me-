@@ -1,0 +1,92 @@
+[
+    {
+        "classes": [
+            {
+                "className": "SystemInfo",
+                "qualifiedClassName": "SystemInfo",
+                "object": true,
+                "superClasses": [
+                    {
+                        "access": "public",
+                        "name": "QObject"
+                    }
+                ],
+                "classInfos": [
+                    {
+                        "name": "QML.Element",
+                        "value": "auto"
+                    },
+                    {
+                        "name": "QML.Singleton",
+                        "value": "true"
+                    }
+                ],
+                "properties": [
+                    {
+                        "name": "videoAdsFolder",
+                        "type": "QUrl",
+                        "index": 0,
+                        "read": "videoAdsFolder"
+                    },
+                    {
+                        "name": "slidesFolder",
+                        "type": "QUrl",
+                        "index": 1,
+                        "read": "slidesFolder"
+                    },
+                    {
+                        "name": "machineID",
+                        "type": "QByteArray",
+                        "index": 2,
+                        "read": "machineID"
+                    },
+                    {
+                        "name": "dev",
+                        "type": "bool",
+                        "index": 3,
+                        "read": "dev"
+                    }
+                ],
+                "slots": [
+                    {
+                        "access": "public",
+                        "name": "getImagePath",
+                        "arguments": [
+                            {
+                                "name": "a1",
+                                "type": "QString"
+                            }
+                        ],
+                        "returnType": "QString"
+                    },
+                    {
+                        "access": "public",
+                        "name": "getFontPath",
+                        "arguments": [
+                            {
+                                "name": "a1",
+                                "type": "QString"
+                            }
+                        ],
+                        "returnType": "QString"
+                    },
+                    {
+                        "access": "public",
+                        "name": "getNextCapturePath",
+                        "arguments": [],
+                        "returnType": "QString"
+                    }
+                ]
+            }
+        ],
+        "outputRevision": 68,
+        "QML_IMPORT_NAME": "DropMe",
+        "QML_IMPORT_MAJOR_VERSION": 1,
+        "QML_IMPORT_MINOR_VERSION": 0,
+        "QT_MODULES": [
+            "QtCore",
+            "QtQml"
+        ],
+        "inputFile": "/home/fares/dev/github/dropmeteamwork/GUI/src/gui/system_info.py"
+    }
+]

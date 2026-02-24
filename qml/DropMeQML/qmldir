@@ -1,0 +1,3 @@
+module DropMeQML
+MainWindow MainWindow.qml
+singleton Global Global.qml

@@ -1,0 +1,163 @@
+[
+    {
+        "classes": [
+            {
+                "className": "RecycleData",
+                "qualifiedClassName": "RecycleData",
+                "object": false
+            },
+            {
+                "className": "Recycle",
+                "qualifiedClassName": "Recycle",
+                "object": false,
+                "superClasses": [
+                    {
+                        "access": "public",
+                        "name": "RecycleData"
+                    }
+                ]
+            },
+            {
+                "className": "Server",
+                "qualifiedClassName": "Server",
+                "object": true,
+                "superClasses": [
+                    {
+                        "access": "public",
+                        "name": "QObject"
+                    }
+                ],
+                "classInfos": [
+                    {
+                        "name": "QML.Element",
+                        "value": "auto"
+                    }
+                ],
+                "signals": [
+                    {
+                        "access": "public",
+                        "name": "qrCodeChanged",
+                        "arguments": [
+                            {
+                                "name": "a1",
+                                "type": "QString"
+                            }
+                        ],
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "name": "qrCodeScanned",
+                        "arguments": [],
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "name": "canInserted",
+                        "arguments": [],
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "name": "plasticInserted",
+                        "arguments": [],
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "name": "otherInserted",
+                        "arguments": [],
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "name": "finishedPhoneNumberRecycle",
+                        "arguments": [
+                            {
+                                "name": "a1",
+                                "type": "bool"
+                            }
+                        ],
+                        "returnType": "void"
+                    }
+                ],
+                "slots": [
+                    {
+                        "access": "public",
+                        "name": "sendAluminumCan",
+                        "arguments": [],
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "name": "sendPlasticBottle",
+                        "arguments": [],
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "name": "finishRecycleQrCode",
+                        "arguments": [],
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "name": "finishRecyclePhoneNumber",
+                        "arguments": [
+                            {
+                                "name": "a1",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "a2",
+                                "type": "int"
+                            },
+                            {
+                                "name": "a3",
+                                "type": "int"
+                            }
+                        ],
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "name": "getCapturePrediction",
+                        "arguments": [
+                            {
+                                "name": "a1",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "a2",
+                                "type": "QString"
+                            }
+                        ],
+                        "returnType": "list"
+                    },
+                    {
+                        "access": "public",
+                        "name": "getQrCode",
+                        "arguments": [],
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "name": "checkQrCodeScanned",
+                        "arguments": [],
+                        "returnType": "void"
+                    }
+                ]
+            }
+        ],
+        "outputRevision": 68,
+        "QML_IMPORT_NAME": "DropMe",
+        "QML_IMPORT_MAJOR_VERSION": 1,
+        "QML_IMPORT_MINOR_VERSION": 0,
+        "QT_MODULES": [
+            "QtCore",
+            "QtNetwork",
+            "QtQml"
+        ],
+        "inputFile": "/home/fares/dev/github/dropmeteamwork/GUI/src/gui/server.py"
+    }
+]
