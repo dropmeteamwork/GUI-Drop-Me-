@@ -8,11 +8,7 @@ import DropMe
 Item {
     required property int userType
     required property ImageCapture imageCapture
-    property int plasticBottles: 0
-    property int aluminumCans: 0
-    property int points: 2*plasticBottles + 4*aluminumCans
     property string phoneNumber: ""
-    property bool processingItem: false
 
     signal finishedWithNoPoints
     signal finishedWithQrCode
@@ -42,7 +38,7 @@ Item {
             clock.start()
         } else if (pred == 'aluminum') {
             Global.serial.sendCan()
-            view.aluminumCans += 1
+            AppState.incrementRecycleCans()
             if (view.userType == Global.UserType.QrCode) {
                 Global.server.sendAluminumCan()
             }
@@ -56,7 +52,7 @@ Item {
             }
         } else if (pred == 'plastic') {
             Global.serial.sendPlastic()
-            view.plasticBottles += 1
+            AppState.incrementRecyclePlastic()
             if (view.userType == Global.UserType.QrCode) {
                 Global.server.sendPlasticBottle()
             }
@@ -176,8 +172,14 @@ Item {
             }
         }
 
-    Component.onDestruction: Global.serial.sendSignOut()
-    Component.onCompleted: view.showCamera()
+    Component.onDestruction: {
+        Global.serial.sendSignOut()
+        AppState.endRecycleSession()
+    }
+    Component.onCompleted: {
+        AppState.startRecycleSession()
+        view.showCamera()
+    }
 
     Timer {
         interval: 2_000
@@ -263,19 +265,19 @@ Item {
         }
 
         ViewText {
-            viewText: Global.convertToLanguageNumerals(view.plasticBottles.toString())
+            viewText: Global.convertToLanguageNumerals(AppState.recyclePlasticBottles.toString())
             x: Global.ifArabic(370, 363)*Global.viewWidthScale
             y: 330*Global.viewHeightScale
         }
 
         ViewText {
-            viewText: Global.convertToLanguageNumerals(view.aluminumCans.toString())
+            viewText: Global.convertToLanguageNumerals(AppState.recycleCans.toString())
             x: Global.ifArabic(600, 592)*Global.viewWidthScale
             y: 330*Global.viewHeightScale
         }
 
         ViewText {
-            viewText: Global.convertToLanguageNumerals(view.points.toString())
+            viewText: Global.convertToLanguageNumerals(AppState.recyclePoints.toString())
             x: Global.ifArabic(775, 750)*Global.viewWidthScale
             y: 330*Global.viewHeightScale
         }
@@ -296,15 +298,18 @@ Item {
                 view.imageCapture.captureToFile(capturePath)
             }
             onFinished: {
-                if (view.points == 0) {
+                if (AppState.recycleHasFinished) return
+                AppState.markRecycleFinished()
+
+                if (AppState.recyclePoints === 0) {
                     view.finishedWithNoPoints()
-                } else if (view.userType == Global.UserType.QrCode) {
+                } else if (view.userType === Global.UserType.QrCode) {
                     view.finishedWithQrCode()
-                } else if (view.userType == Global.UserType.PhoneNumber) {
-                    Global.server.finishRecyclePhoneNumber(view.phoneNumber, view.plasticBottles, view.aluminumCans)
+                } else if (view.userType === Global.UserType.PhoneNumber) {
+                    Global.server.finishRecyclePhoneNumber(view.phoneNumber, AppState.recyclePlasticBottles, AppState.recycleCans)
                 }
-                if (view.userType == Global.UserType.QrCode) {
-                    Global.server.finishRecycleQrCode(view.phoneNumber, view.plasticBottles, view.aluminumCans)
+                if (view.userType === Global.UserType.QrCode) {
+                    Global.server.finishRecycleQrCode(view.phoneNumber, AppState.recyclePlasticBottles, AppState.recycleCans)
                 }
             }
         }

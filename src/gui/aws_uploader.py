@@ -4,10 +4,12 @@ import os
 from datetime import datetime
 from botocore.exceptions import ClientError, EndpointConnectionError
 from pathlib import Path
+import tempfile
 import threading
 import time
 from typing import Optional, Tuple
 
+AWS_DEBUG_LOG = Path(tempfile.gettempdir()) / "aws_debug.log"
 
 def _load_test_config():
     """
@@ -93,23 +95,23 @@ class AWSUploader:
 
     def _is_online(self) -> bool:
         """Check if S3 is accessible"""
-        with open('/tmp/aws_debug.log', 'a') as f:
+        with open(AWS_DEBUG_LOG, 'a', encoding='utf-8') as f:
             f.write(f"{datetime.now()}: Checking online status\n")
             f.write(f"{datetime.now()}: s3_client exists: {self.s3_client is not None}\n")
             f.write(f"{datetime.now()}: bucket_name: {self.bucket_name}\n")
 
         if self.s3_client is None:
-            with open('/tmp/aws_debug.log', 'a') as f:
+            with open(AWS_DEBUG_LOG, 'a', encoding='utf-8') as f:
                 f.write(f"{datetime.now()}: s3_client is None - returning False\n")
             return False
 
         try:
             self.s3_client.head_bucket(Bucket=self.bucket_name)
-            with open('/tmp/aws_debug.log', 'a') as f:
+            with open(AWS_DEBUG_LOG, 'a', encoding='utf-8') as f:
                 f.write(f"{datetime.now()}: head_bucket SUCCESS - returning True\n")
             return True
         except Exception as e:
-            with open('/tmp/aws_debug.log', 'a') as f:
+            with open(AWS_DEBUG_LOG, 'a', encoding='utf-8') as f:
                 f.write(f"{datetime.now()}: Exception: {type(e).__name__} - {str(e)}\n")
             return False
 
@@ -253,6 +255,36 @@ class AWSUploader:
         except Exception as e:
             print(f"[AWSUploader] Error updating metadata with user_id: {e}")
 
+    def upload_prediction_metadata_only(self, metadata: dict) -> dict:
+        """
+        DEV mode helper: queue ONLY the prediction metadata JSON for upload.
+        Uses the same queue + background sync as image uploads.
+        """
+        # Build keys same style as upload_prediction
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        machine_name = metadata.get('machine_name', self.machine_name)
+        safe_machine = machine_name.replace("'", "").replace(" ", "_")
+        capture_id = metadata.get('capture_id') or datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+
+        # Put JSON under predictions/... just like normal
+        s3_json_key = f"predictions/{safe_machine}/{timestamp}/prediction.json"
+
+        prediction_data = metadata.copy()
+
+        # Still save locally (optional but consistent with your design)
+        self._save_metadata_locally(prediction_data, capture_id)
+
+        queue_item = {
+            "mode": "metadata_only",
+            "json_s3_key": s3_json_key,
+            "prediction_data": prediction_data,
+            "queued_at": datetime.now().isoformat(),
+        }
+
+        self._save_to_queue(queue_item)
+
+        return {"success": True, "queued": True, "message": "Queued metadata-only upload"}
+
     def upload_prediction(self,
                           image_path: str,
                           prediction_image_bytes: bytes,
@@ -341,7 +373,27 @@ class AWSUploader:
         try:
             with open(queue_file, 'r') as f:
                 queue_item = json.load(f)
+                mode = queue_item.get("mode", "image_and_json")
+            if mode == "metadata_only":
+                try:
+                    if self.s3_client is None:
+                        return False
 
+                    self.s3_client.put_object(
+                        Bucket=self.bucket_name,
+                        Key=queue_item["json_s3_key"],
+                        Body=json.dumps(queue_item["prediction_data"], indent=2),
+                        ContentType='application/json'
+                    )
+
+                    queue_file.unlink()
+                    print(f"[AWSUploader] Uploaded metadata-only: {queue_item['json_s3_key']}")
+                    return True
+
+                except Exception as e:
+                    print(f"[AWSUploader] Error uploading metadata-only {queue_file.name}: {e}")
+                    return False
+    
             image_path = queue_item['image_path']
             if not os.path.exists(image_path):
                 print(f"[AWSUploader] Queued image not found: {image_path}, removing from queue")
@@ -458,5 +510,4 @@ class AWSUploader:
         except Exception as e:
             print(f"[AWSUploader] Error getting queue status: {e}")
             return {'online': False, 'queued_items': 0, 'oldest_queued': None}
-
 

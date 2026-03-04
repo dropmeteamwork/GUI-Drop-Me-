@@ -8,8 +8,6 @@ import DropMe
 
 Item {
     property MainWindow window: null
-    property int language: Global.Language.English
-    property string languageCode: (language == Global.Language.Arabic) ? "ar" : (Global.Language.English ? "en" : "")
     property real screenWidth: window == null ? 1080 : Math.min(window.width, 9*window.height/16)
     property real screenHeight: window == null ? 1920 : Math.min(16*window.width/9, window.height)
     property real viewWidth: screenWidth
@@ -25,8 +23,6 @@ Item {
     property Server server: globalServer
     property AutoSerial serial: globalSerial
 
-    property bool handInGate: false
-    property bool shouldSignOut: false
 
     enum Language {
         Arabic,
@@ -61,7 +57,7 @@ Item {
     }
 
     function getMultilingualImage(resource) {
-        return SystemInfo.getImagePath(languageCode + "-" + resource)
+        return SystemInfo.getImagePath(AppState.languageCode + "-" + resource)
     }
 
     function convertToArabicNumerals(inputString) {
@@ -85,6 +81,7 @@ Item {
     }
 
     function ifArabic(ifExpr, elseExpr) {
-        return Global.language == Global.Language.Arabic ? ifExpr : elseExpr
+        // language state is now owned by AppState (Python singleton)
+        return AppState.languageCode === "ar" ? ifExpr : elseExpr
     }
 }

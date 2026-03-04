@@ -11,8 +11,9 @@ Item {
 
     Row {
         spacing: 15*Global.viewHeightScale
+        layoutDirection: Global.ifArabic(Qt.RightToLeft, Qt.LeftToRight)
         Grid {
-            layoutDirection: Global.ifArabic(Qt.RightToLeft, Qt.LeftToRight)
+            layoutDirection: Qt.LeftToRight
             columns: 3
             rowSpacing: 15*Global.viewWidthScale
             columnSpacing: 15*Global.viewHeightScale

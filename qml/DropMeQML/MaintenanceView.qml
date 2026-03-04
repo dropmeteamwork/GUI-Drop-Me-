@@ -17,7 +17,7 @@ Item {
         id: priv
         property int lockNumber: 0
         property string lockPassword: ""
-        name: lockNumber > 0 ? "background-numpad" : Global.languageCode + "-background-maintenance"
+        name: lockNumber > 0 ? "background-numpad" : AppState.languageCode + "-background-maintenance"
         anchors.fill: parent
         //Component.onCompleted: Global.serial.getDoorStatus()
         Resource {

@@ -127,6 +127,8 @@ class Server(QObject):
         if not self.data_dir.exists():
             self.data_dir.mkpath(".")
 
+        self.uploader = AWSUploader()
+
         # ==================== DEV MODE + ML (lazy loaded) ====================
         self._mlmodel = None
         self._mlmodel_loaded = False
@@ -334,70 +336,57 @@ class Server(QObject):
         self.logger.info(recycle.to_json())
 
     # ========== NEW: Dev-mode simulated prediction uploader ==========
-    @Slot(str)
+    # ========== NEW: Dev-mode simulated prediction uploader ==========
+    @Slot(str, str)
     def sendDevPrediction(self, item: str, capturePath: str = "") -> None:
         """
-        In dev mode you can call this slot to push a simulated prediction to S3.
-        It uses the local dropme_config.json if present.
+        Dev slot used by QML to simulate a prediction upload.
+        ✅ Reuses a single AWSUploader instance (no repeated threads / boto init)
+        ✅ Never blocks UI thread with direct S3 put_object
+        ✅ If offline, it will queue locally and background sync later
         """
         try:
-            # Import here to ensure AWSUploader is defined in this scope
-            #from gui.aws_uploader import AWSUploader
-            #import time
-            #from datetime import datetime
-            #import tempfile
+            uploader = getattr(self, "uploader", None)
+            if uploader is None:
+                self.uploader = AWSUploader()
+                uploader = self.uploader
 
-            uploader = AWSUploader()  # picks up test config if available
-            # Prepare metadata and S3 keys
             capture_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-            timestamp   = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
             decision_map = {
-                'plastic':   ('ACCEPTED', 'NONE'),
-                'aluminum':  ('ACCEPTED', 'NONE'),
-                'hand':      ('REJECTED', 'HAND_VISIBLE'),
-                'other':     ('REJECTED', 'NONE'),
+                "plastic": ("ACCEPTED", "NONE"),
+                "aluminum": ("ACCEPTED", "NONE"),
+                "hand": ("REJECTED", "HAND_VISIBLE"),
+                "other": ("REJECTED", "NONE"),
             }
-            decision, reason = decision_map.get(item.lower(), ('REJECTED', 'NONE'))
+            decision, reason = decision_map.get(item.lower(), ("REJECTED", "NONE"))
+
             metadata = {
-                'capture_id':      capture_id,
-                'machine_name':    uploader.machine_name,
-                'item_type':       item.lower(),
-                'confidence':      1.0,
-                'decision':        decision,
-                'rejection_reason': reason,
-                'timestamp':       str(int(time.time())),
-                'operation_mode':  'dev_manual'
+                "capture_id": capture_id,
+                "machine_name": uploader.machine_name,
+                "item_type": item.lower(),
+                "confidence": 1.0,
+                "decision": decision,
+                "rejection_reason": reason,
+                "timestamp": str(int(time.time())),
+                "operation_mode": "dev_manual",
             }
-            # Compute S3 keys using the machine name and timestamp
-            safe_machine = uploader.machine_name.replace("'", "").replace(" ", "_")
-            s3_image_key = f"captures/{safe_machine}/{timestamp}/dev_{item}_{capture_id}.jpg"
-            s3_json_key  = f"predictions/{safe_machine}/{timestamp}/prediction.json"
-            # If a valid capturePath was provided and exists, use it; otherwise fall back to dummy upload
+
             if capturePath and os.path.exists(capturePath):
-                # Use the normal uploader method so the real image is stored and metadata queued
+                # ✅ queue upload (non-blocking)
                 uploader.upload_prediction(
                     image_path=capturePath,
                     prediction_image_bytes=b"",
-                    metadata=metadata
+                    metadata=metadata,
                 )
-                self.logger.info(f"Dev-mode upload (real image) queued for {item}")
+                self.logger.info(f"Dev-mode upload queued for {item} (capture={Path(capturePath).name})")
             else:
-                # Upload a zero-length JPEG placeholder and the JSON metadata directly
-                uploader.s3_client.put_object(
-                    Bucket=uploader.bucket_name,
-                    Key=s3_image_key,
-                    Body=b"",
-                    ContentType='image/jpeg'
-                )
-                uploader.s3_client.put_object(
-                    Bucket=uploader.bucket_name,
-                    Key=s3_json_key,
-                    Body=json.dumps(metadata, indent=2),
-                    ContentType='application/json'
-                )
-                self.logger.info(f"Dev-mode upload (dummy image) pushed for {item}: {s3_json_key}")
+                res = uploader.upload_prediction_metadata_only(metadata)
+                self.logger.info(f"Dev-mode metadata-only upload queued: {res}")
+
         except Exception as e:
-            self.logger.error(f"Dev-mode upload failed: {e}")
+            self.logger.error(f"Dev-mode upload failed: {e}", exc_info=True)
 
     # ==================== PREDICTION ====================
 
@@ -540,20 +529,25 @@ class Server(QObject):
 
     def handleFinishRecyclePhoneNumber(self, reply: QNetworkReply) -> None:
         if reply.error() != QNetworkReply.NetworkError.NoError:
-            # Keep original behavior: mark pending
+            # Network failure — keep the queued item for a future retry.
             self.finishedPhoneNumberRecycle.emit(True)
             return
 
+        # Bug fix: emit success signal IMMEDIATELY so the UI can proceed.
+        # Old code re-queued from the file queue before emitting, which caused
+        # the same item to be sent twice and delayed the signal by an extra round-trip.
+        self.finishedPhoneNumberRecycle.emit(False)
+
+        # Drain any OTHER items backed up from previous offline sessions, AFTER emitting.
         next_buffer = self.pending_recycles_queue.dequeue()
         if next_buffer is None:
-            self.finishedPhoneNumberRecycle.emit(False)
             return
 
         next_in_queue = Recycle.from_json(next_buffer)
+        self.logger.info(f"Draining pending queue item for {next_in_queue.phoneNumber}")
         req = QNetworkRequest(QUrl(f"{SERVER_BASE_URL}/machines/recycle/add/{MACHINE_NAME}/{next_in_queue.phoneNumber}/"))
         req.setRawHeader(AUTHORIZATION_HEADER, AUTHORIZATION_HEADER_VALUE)
         req.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
-
         self.finish_recycle_phone_number_manager.post(req, next_in_queue.data().to_json().encode())
 
     def handleRecycleResponse(self, reply: QNetworkReply) -> None:

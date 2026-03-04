@@ -4,6 +4,7 @@ from pathlib import Path
 
 import gui.server      # registers Server
 import gui.autoserial  # registers AutoSerial
+import gui.app_state   # registers AppState singleton
 
 # Force-add project root to sys.path so 'from gui import ...' works
 script_dir = Path(__file__).resolve().parent  # src/gui
@@ -62,6 +63,11 @@ def main() -> None:
     system_info = engine.singletonInstance("DropMe", "SystemInfo")
     if system_info is not None:
         system_info.dev = args.dev
+
+    app_state = engine.singletonInstance("DropMe", "AppState")
+    if app_state is not None:
+        app_state.resetWorkflowFlags()
+        
     exit_code = app.exec()
     del engine
     sys.exit(exit_code)
