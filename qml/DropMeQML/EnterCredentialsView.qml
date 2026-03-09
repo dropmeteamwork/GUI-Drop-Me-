@@ -42,6 +42,8 @@ Item {
 
         Image {
             source: view.qrcode
+            asynchronous: true
+            cache: true
             x: Global.ifArabic(105, 701)*Global.viewWidthScale
             y: 316*Global.viewHeightScale
             width: 257*Global.viewWidthScale

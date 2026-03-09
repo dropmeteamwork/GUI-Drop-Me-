@@ -1,4 +1,4 @@
-"""
+﻿"""
 DropMe AutoSerial - Automatic Serial Port Discovery and Protocol Handler
 (senior-grade, cross-platform safe)
 
@@ -13,8 +13,7 @@ Changes:
 
 from __future__ import annotations
 
-import csv
-import json
+import os
 import time
 import uuid
 from datetime import datetime
@@ -26,28 +25,14 @@ from PySide6.QtSerialPort import QSerialPort, QSerialPortInfo
 
 from gui import mcu
 from gui import logging
+from gui.aws_uploader import AWSUploader
+from gui.machine_controller import MachineController, ProcessingState, ControllerResult
+from gui.protocol_telemetry_service import ProtocolTelemetryService
+from gui.stm_interface import QtStmInterface
 
 QML_IMPORT_NAME = "DropMe"
 QML_IMPORT_MAJOR_VERSION = 1
 QML_IMPORT_MINOR_VERSION = 0
-
-
-class ProcessingState:
-    IDLE = None
-
-    # Accept flow states
-    ACCEPT_SORT = "ACCEPT_SORT"              # Waiting for SORT_DONE after SORT_SET
-    ACCEPT_CONVEYOR = "ACCEPT_CONVEYOR"      # Waiting for CONVEYOR_DONE
-
-    # Reject flow states
-    REJECT_ACTIVATE = "REJECT_ACTIVATE"      # Waiting for REJECT_DONE
-    REJECT_HOME = "REJECT_HOME"              # Waiting for REJECT_HOME_OK
-
-    # Gate close flow
-    CLOSING_GATE = "CLOSING_GATE"            # Waiting for GATE_CLOSED
-
-    # End operation flow
-    ENDING_OPERATION = "ENDING_OPERATION"    # Waiting for SYS_IDLE after OP_END
 
 
 @QmlElement
@@ -114,14 +99,11 @@ class AutoSerial(QObject):
         # Fraud prevention hold (PC-side, from ML hand detection)
         self._fraud_hold = False
 
-        # State machine for item processing
-        self._processing_state = ProcessingState.IDLE
-        self._pending_item_type: str | None = None  # "plastic" or "can" or "reject"
+        # Core workflow controller (business logic)
+        self._machine_controller = MachineController(max_gate_close_retries=5)
 
-        # Gate close retry mechanism
-        self._pending_gate_close = False
-        self._gate_close_retry_count = 0
-        self._max_gate_close_retries = 5
+        # Serial transport abstraction
+        self._stm_interface = QtStmInterface()
 
         # ==================== TIMERS ====================
         self._credentials_timeout_timer = QTimer(self)
@@ -139,18 +121,25 @@ class AutoSerial(QObject):
         self._command_timeout_timer.setInterval(15000)
         self._command_timeout_timer.timeout.connect(self._on_command_timeout)
 
-        # ==================== FILE PATHS ====================
-        # Put logs in project folder (same repo) so Windows/Linux behave the same.
-        # autoserial.py is usually .../<project>/gui/autoserial.py, so parent of "gui" is project root.
+        # ==================== Telemetry Service ====================
         project_root = Path(__file__).resolve().parents[1]
+        telemetry_dir = project_root / "dropme_protocol_logs"
 
-        self._protocol_log_dir = project_root / "dropme_protocol_logs"
-        self._protocol_log_file = self._protocol_log_dir / "protocol_events.jsonl"
+        self._telemetry = ProtocolTelemetryService(
+            logger=self.logger,
+            log_dir=telemetry_dir,
+            machine_name=os.environ.get("MACHINE_NAME", "maadi_club"),
+            telemetry_uploader=AWSUploader(),
+        )
 
-        self._weights_log_dir = project_root / "dropme_protocol_logs"
-        self._weights_log_file = self._weights_log_dir / "weights.csv"
-        self._init_weights_log()
+        self._bin_plastic_full = False
+        self._bin_can_full = False
+        self._bin_reject_full = False
+        self._last_weight_grams = None
+        self._last_error = ""
 
+        self._telemetry.initialize()
+        self._write_sensor_snapshot()
         # ==================== Port scanning timer ====================
         self.scan_timer = QTimer(self)
         self.scan_timer.timeout.connect(self._scan_ports)
@@ -168,41 +157,128 @@ class AutoSerial(QObject):
 
         self.logger.info("AutoSerial initialized (using QtSerialPort) - State machine enabled")
 
+    @property
+    def _processing_state(self):
+        return self._machine_controller.processing_state
+
+    @_processing_state.setter
+    def _processing_state(self, value):
+        self._machine_controller.processing_state = value
+
+    @property
+    def _pending_item_type(self):
+        return self._machine_controller.pending_item_type
+
+    @_pending_item_type.setter
+    def _pending_item_type(self, value):
+        self._machine_controller.pending_item_type = value
+
+    @property
+    def _pending_gate_close(self):
+        return self._machine_controller.pending_gate_close
+
+    @_pending_gate_close.setter
+    def _pending_gate_close(self, value):
+        self._machine_controller.pending_gate_close = bool(value)
+
+    @property
+    def _gate_close_retry_count(self):
+        return self._machine_controller.gate_close_retry_count
+
+    @_gate_close_retry_count.setter
+    def _gate_close_retry_count(self, value):
+        self._machine_controller.gate_close_retry_count = int(value)
+
+    @property
+    def _max_gate_close_retries(self):
+        return self._machine_controller.max_gate_close_retries
+
+    @_max_gate_close_retries.setter
+    def _max_gate_close_retries(self, value):
+        self._machine_controller.max_gate_close_retries = int(value)
+
+    def _dispatch_controller_commands(self, result: ControllerResult) -> None:
+        for command in result.commands:
+            self._send(command.cmd, command.payload)
+
+    def _apply_controller_result(self, result: ControllerResult) -> None:
+        self._dispatch_controller_commands(result)
+
+        if result.start_gate_retry_timer:
+            self._gate_close_retry_timer.start()
+        if result.stop_gate_retry_timer:
+            self._gate_close_retry_timer.stop()
+
+        if result.emit_plastic_accepted:
+            self.plasticAccepted.emit()
+        if result.emit_can_accepted:
+            self.canAccepted.emit()
+        if result.emit_item_rejected:
+            self.itemRejected.emit()
+
     # ==================== LOG INIT ====================
 
+    def _sensor_snapshot_data(self) -> dict:
+        return {
+            "ts": datetime.now().astimezone().isoformat(timespec="seconds"),
+            "port": self.connected_port_name or "",
+            "session_id": self._session_id or "",
+            "system": {
+                "busy": self._system_busy,
+                "operation_active": self._operation_active,
+            },
+            "gate": {
+                "open": self._gate_open,
+                "blocked": self._gate_blocked,
+            },
+            "bins": {
+                "plastic_full": self._bin_plastic_full,
+                "can_full": self._bin_can_full,
+                "reject_full": self._bin_reject_full,
+            },
+            "last_weight_grams": self._last_weight_grams,
+            "last_error": self._last_error,
+        }
+
     def _init_weights_log(self) -> None:
-        try:
-            self._weights_log_dir.mkdir(parents=True, exist_ok=True)
-            if not self._weights_log_file.exists():
-                with open(self._weights_log_file, "w", newline="", encoding="utf-8") as f:
-                    csv.writer(f).writerow(["timestamp", "session_id", "weight_grams", "port"])
-                self.logger.info(f"Created weights log: {self._weights_log_file}")
-        except Exception as e:
-            self.logger.warning(f"Failed to init weights log: {e}")
+        self._telemetry.initialize()
 
     def _log_weight(self, weight_grams: int) -> None:
-        try:
-            with open(self._weights_log_file, "a", newline="", encoding="utf-8") as f:
-                csv.writer(f).writerow([
-                    datetime.now().astimezone().isoformat(timespec="seconds"),
-                    self._session_id or "no_session",
-                    weight_grams,
-                    self.connected_port_name or "unknown",
-                ])
-            self.logger.info(f"Logged weight: {weight_grams}g")
-        except Exception as e:
-            self.logger.warning(f"Failed to log weight: {e}")
+        self._telemetry.log_weight(weight_grams, self._session_id, self.connected_port_name)
 
     def _append_protocol_event(self, event: dict) -> None:
-        try:
-            if self._session_id and "session_id" not in event:
-                event["session_id"] = self._session_id
-            self._protocol_log_dir.mkdir(parents=True, exist_ok=True)
-            with self._protocol_log_file.open("a", encoding="utf-8") as f:
-                json.dump(event, f, ensure_ascii=False)
-                f.write("\n")
-        except Exception as e:
-            self.logger.warning(f"Protocol log failed: {e}")
+        self._telemetry.append_protocol_event(event, self._session_id)
+
+    def _init_sensor_logs(self) -> None:
+        self._telemetry.write_sensor_snapshot(self._sensor_snapshot_data())
+
+    def _write_sensor_snapshot(self) -> None:
+        self._telemetry.write_sensor_snapshot(self._sensor_snapshot_data())
+
+    def _append_sensor_event(self, kind: str, payload: int = 0, extra: dict | None = None) -> None:
+        self._telemetry.append_sensor_event(
+            kind=kind,
+            payload=payload,
+            session_id=self._session_id,
+            port_name=self.connected_port_name,
+            snapshot=self._sensor_snapshot_data(),
+            extra=extra,
+        )
+
+    def _write_protocol_state_if_changed(self, force: bool = False) -> None:
+        self._telemetry.write_protocol_state_if_changed(force=force)
+
+    def _sync_connection_state(self, connected: bool) -> None:
+        self._telemetry.sync_connection_state(connected=connected, port_name=self.connected_port_name)
+
+    def _reduce_protocol_state(self, direction: str, frame: mcu.Frame, raw: bytes) -> None:
+        self._telemetry.reduce_protocol_state(
+            direction=direction,
+            frame=frame,
+            raw=raw,
+            connected=self.port.isOpen(),
+            port_name=self.connected_port_name,
+        )
 
     # ==================== CONNECTION MANAGEMENT ====================
 
@@ -224,28 +300,22 @@ class AutoSerial(QObject):
                 test_port.setParity(QSerialPort.NoParity)
                 test_port.setStopBits(QSerialPort.OneStop)
 
-                frame = mcu.Frame(self.seq_manager.next(), mcu.SystemControl.SYS_INIT, 0x00)
-                test_port.write(frame.to_bytes())
+                if self._stm_interface.probe_ready(test_port, self.seq_manager.next()):
+                    self.port = test_port
+                    self.port.readyRead.connect(self._read_data)
+                    self.connected_port_name = port_name
+                    self.last_response_time = time.time()
 
-                if test_port.waitForReadyRead(1000):
-                    data = test_port.readAll().data()
-                    if len(data) >= mcu.FRAME_SIZE:
-                        response = mcu.Frame.from_bytes(data[:mcu.FRAME_SIZE])
-                        if response and response.cmd == mcu.StatusFeedback.SYS_READY:
-                            self.port = test_port
-                            self.port.readyRead.connect(self._read_data)
-                            self.connected_port_name = port_name
-                            self.last_response_time = time.time()
+                    self.scan_timer.stop()
+                    self.ping_timer.start()
+                    self.bin_poll_timer.start()
 
-                            self.scan_timer.stop()
-                            self.ping_timer.start()
-                            self.bin_poll_timer.start()
-
-                            self.logger.info(f"Connected to {port_name}")
-                            self.connectionEstablished.emit(port_name)
-                            self.systemReady.emit()
-                            self.ready.emit()
-                            return
+                    self.logger.info(f"Connected to {port_name}")
+                    self.connectionEstablished.emit(port_name)
+                    self.systemReady.emit()
+                    self.ready.emit()
+                    self._sync_connection_state(True)
+                    return
 
             except Exception as e:
                 self.logger.error(f"Error testing {port_name}: {e}")
@@ -272,6 +342,7 @@ class AutoSerial(QObject):
         if self.port.isOpen():
             self.port.close()
         self.connected_port_name = None
+        self._sync_connection_state(False)
         self._reset_state()
         self.ping_timer.stop()
         self.bin_poll_timer.stop()
@@ -285,11 +356,13 @@ class AutoSerial(QObject):
         self._system_busy = False
         self._fraud_hold = False
 
-        self._processing_state = ProcessingState.IDLE
-        self._pending_item_type = None
+        self._bin_plastic_full = False
+        self._bin_can_full = False
+        self._bin_reject_full = False
+        self._last_weight_grams = None
+        self._last_error = ""
 
-        self._pending_gate_close = False
-        self._gate_close_retry_count = 0
+        self._machine_controller.reset()
 
         self._credentials_timeout_timer.stop()
         self._gate_close_retry_timer.stop()
@@ -373,7 +446,7 @@ class AutoSerial(QObject):
             frame_bytes = bytes(self.rx_buffer[:mcu.FRAME_SIZE])
             del self.rx_buffer[:mcu.FRAME_SIZE]
 
-            frame = mcu.Frame.from_bytes(frame_bytes)
+            frame = self._stm_interface.decode_frame(frame_bytes)
             if frame:
                 self._handle_frame(frame, frame_bytes)
             else:
@@ -401,6 +474,7 @@ class AutoSerial(QObject):
             "state": self._processing_state,
             "raw": raw.hex(" ")
         })
+        self._reduce_protocol_state("RX", frame, raw)
 
         # SYSTEM STATUS
         if cmd == mcu.StatusFeedback.SYS_READY:
@@ -416,31 +490,28 @@ class AutoSerial(QObject):
             self._system_busy = False
             self.systemIdle.emit()
 
-            if self._processing_state == ProcessingState.ENDING_OPERATION:
-                self.logger.info("OP_END acknowledged, now closing gate")
-                self._processing_state = ProcessingState.CLOSING_GATE
-                self._pending_gate_close = True
-                self._attempt_gate_close()
+            result = self._machine_controller.on_system_idle(self._gate_blocked)
+            self._apply_controller_result(result)
 
         # GATE STATUS
         elif cmd == mcu.StatusFeedback.GATE_OPENED:
             self._gate_open = True
             self._gate_blocked = False
             self.gateOpened.emit()
+            self._append_sensor_event("GATE_OPENED")
             self.logger.info("Gate opened")
 
         elif cmd == mcu.StatusFeedback.GATE_CLOSED:
             self._gate_open = False
             self._gate_blocked = False
-            self._pending_gate_close = False
-            self._gate_close_retry_count = 0
-            self._gate_close_retry_timer.stop()
 
             self.gateClosed.emit()
+            self._append_sensor_event("GATE_CLOSED")
             self.logger.info("Gate closed")
 
-            if self._processing_state == ProcessingState.CLOSING_GATE:
-                self._processing_state = ProcessingState.IDLE
+            result = self._machine_controller.on_gate_closed()
+            self._apply_controller_result(result)
+            if result.end_sequence_complete:
                 self.logger.info("End session sequence complete")
 
         elif cmd == mcu.StatusFeedback.GATE_BLOCKED:
@@ -449,117 +520,119 @@ class AutoSerial(QObject):
             self.logger.warning("GATE BLOCKED - obstruction detected!")
             self.gateBlocked.emit()
             self.handInGate.emit()
+            self._append_sensor_event("GATE_BLOCKED", 0)
 
-            if self._pending_gate_close:
+            result = self._machine_controller.on_gate_blocked()
+            self._apply_controller_result(result)
+            if result.start_gate_retry_timer:
                 self.logger.info("Gate blocked during close - will retry")
-                self._gate_close_retry_timer.start()
 
         # MOTION FEEDBACK
         elif cmd == mcu.StatusFeedback.SORT_DONE:
             self.sortDone.emit(frame.payload)
 
-            if self._processing_state == ProcessingState.ACCEPT_SORT:
+            result = self._machine_controller.on_sort_done()
+            self._apply_controller_result(result)
+            if result.commands:
                 self.logger.info("Sort path set, now running conveyor")
-                self._processing_state = ProcessingState.ACCEPT_CONVEYOR
-                self._send(mcu.MotionControl.CONVEYOR_RUN, mcu.CONVEYOR_TIME_ACCEPT)
 
         elif cmd == mcu.StatusFeedback.CONVEYOR_DONE:
             self.conveyorDone.emit()
 
-            # FIX: check state BEFORE resetting it
-            if self._processing_state == ProcessingState.ACCEPT_CONVEYOR:
-                self.logger.info(f"Accept sequence COMPLETE for {self._pending_item_type}")
-                if self._pending_item_type == "plastic":
-                    self.plasticAccepted.emit()
-                elif self._pending_item_type == "can":
-                    self.canAccepted.emit()
-
-                self._pending_item_type = None
-                self._processing_state = ProcessingState.IDLE
-            else:
-                # Non-state-machine conveyor completion
-                self._processing_state = ProcessingState.IDLE
+            pending_item = self._pending_item_type
+            result = self._machine_controller.on_conveyor_done()
+            self._apply_controller_result(result)
+            if result.emit_plastic_accepted or result.emit_can_accepted:
+                self.logger.info(f"Accept sequence COMPLETE for {pending_item}")
 
         elif cmd == mcu.StatusFeedback.REJECT_DONE:
             self.rejectDone.emit()
 
-            if self._processing_state == ProcessingState.REJECT_ACTIVATE:
+            result = self._machine_controller.on_reject_done()
+            self._apply_controller_result(result)
+            if result.commands:
                 self.logger.info("Reject done, now homing reject arm")
-                self._processing_state = ProcessingState.REJECT_HOME
-                self._send(mcu.MotionControl.REJECT_HOME)
 
         elif cmd == mcu.StatusFeedback.REJECT_HOME_OK:
             self.rejectHomeOk.emit()
 
-            if self._processing_state == ProcessingState.REJECT_HOME:
+            result = self._machine_controller.on_reject_home_ok()
+            self._apply_controller_result(result)
+            if result.emit_item_rejected:
                 self.logger.info("Reject sequence COMPLETE")
-                self.itemRejected.emit()
-                self._pending_item_type = None
-                self._processing_state = ProcessingState.IDLE
 
         # SENSOR
         elif cmd == mcu.SensorData.WEIGHT_DATA:
+            self._last_weight_grams = int(frame.payload)
             self._log_weight(frame.payload)
             self.weightReceived.emit(frame.payload)
+            self._append_sensor_event("WEIGHT_DATA", frame.payload)
 
         elif cmd == mcu.SensorData.BIN_PLASTIC_FULL:
+            self._bin_plastic_full = True
             self.logger.warning("BIN FULL: Plastic")
             self.binFull.emit("Plastic")
+            self._append_sensor_event("BIN_PLASTIC_FULL", frame.payload)
 
         elif cmd == mcu.SensorData.BIN_CAN_FULL:
+            self._bin_can_full = True
             self.logger.warning("BIN FULL: Can")
             self.binFull.emit("Can")
+            self._append_sensor_event("BIN_CAN_FULL", frame.payload)
 
         elif cmd == mcu.SensorData.BIN_REJECT_FULL:
+            self._bin_reject_full = True
             self.logger.warning("BIN FULL: Reject")
             self.binFull.emit("Reject")
+            self._append_sensor_event("BIN_REJECT_FULL", frame.payload)
 
         # ERRORS
         elif cmd == mcu.ErrorFault.ERR_GATE_TIMEOUT:
             self.logger.error("ERROR: Gate timeout")
+            self._last_error = "ERR_GATE_TIMEOUT"
             self.errorOccurred.emit("ERR_GATE_TIMEOUT", frame.payload)
+            self._append_sensor_event("ERR_GATE_TIMEOUT", frame.payload)
             self._abort_processing()
             self.resetSystem()
 
         elif cmd == mcu.ErrorFault.ERR_MOTOR_STALL:
             self.logger.error(f"ERROR: Motor stall ({frame.payload})")
+            self._last_error = "ERR_MOTOR_STALL"
             self.errorOccurred.emit("ERR_MOTOR_STALL", frame.payload)
+            self._append_sensor_event("ERR_MOTOR_STALL", frame.payload)
             self._abort_processing()
             self.resetSystem()
 
         elif cmd == mcu.ErrorFault.ERR_SENSOR_FAIL:
             self.logger.error(f"ERROR: Sensor fail ({frame.payload})")
+            self._last_error = "ERR_SENSOR_FAIL"
             self.errorOccurred.emit("ERR_SENSOR_FAIL", frame.payload)
+            self._append_sensor_event("ERR_SENSOR_FAIL", frame.payload)
             self._abort_processing()
             self.resetSystem()
 
         elif cmd == mcu.ErrorFault.ERR_BIN_FULL:
             self.logger.error(f"ERROR: Bin full ({frame.payload})")
+            self._last_error = "ERR_BIN_FULL"
             self.errorOccurred.emit("ERR_BIN_FULL", frame.payload)
+            self._append_sensor_event("ERR_BIN_FULL", frame.payload)
 
     def _abort_processing(self) -> None:
         self.logger.warning(f"Aborting processing state: {self._processing_state}")
-        self._processing_state = ProcessingState.IDLE
-        self._pending_item_type = None
-        self._pending_gate_close = False
+        result = self._machine_controller.abort_processing()
+        self._apply_controller_result(result)
 
     # ==================== GATE CLOSE RETRY ====================
 
     def _attempt_gate_close(self) -> None:
-        if self._gate_blocked:
+        result = self._machine_controller.attempt_gate_close(self._gate_blocked)
+        if result.start_gate_retry_timer:
             self.logger.warning("Cannot close gate - blocked, will retry")
-            self._gate_close_retry_timer.start()
-            return
-
-        if self._gate_close_retry_count >= self._max_gate_close_retries:
+        if result.dropped:
             self.logger.error("Max gate close retries reached!")
-            self._pending_gate_close = False
-            self._processing_state = ProcessingState.IDLE
-            return
-
-        self._gate_close_retry_count += 1
-        self.logger.info(f"Attempting gate close (attempt {self._gate_close_retry_count})")
-        self._send(mcu.MotionControl.GATE_CLOSE)
+        elif result.commands:
+            self.logger.info(f"Attempting gate close (attempt {self._gate_close_retry_count})")
+        self._apply_controller_result(result)
 
     def _retry_gate_close(self) -> None:
         if self._pending_gate_close:
@@ -573,7 +646,8 @@ class AutoSerial(QObject):
             "state": self._processing_state,
             "note": "MCU did not respond in time"
         })
-        self._abort_processing()
+        result = self._machine_controller.on_command_timeout()
+        self._apply_controller_result(result)
         self.errorOccurred.emit("COMMAND_TIMEOUT", 0)
 
     # ==================== TX ====================
@@ -583,9 +657,7 @@ class AutoSerial(QObject):
             self.logger.warning("Cannot send - not connected")
             return False
 
-        frame = mcu.Frame(self.seq_manager.next(), cmd, payload)
-        raw = frame.to_bytes()
-        written = self.port.write(raw)
+        frame, raw, written = self._stm_interface.write_command(self.port, self.seq_manager.next(), cmd, payload)
 
         cmd_name = mcu.get_command_name(cmd)
         self.logger.debug(f"TX: {cmd_name} PL=0x{payload:02X}")
@@ -599,6 +671,7 @@ class AutoSerial(QObject):
             "raw": raw.hex(" ")
         })
         self.commandSent.emit(cmd_name, payload)
+        self._reduce_protocol_state("TX", frame, raw)
 
         commands_without_timeout = [
             mcu.SystemControl.SYS_PING,
@@ -678,8 +751,8 @@ class AutoSerial(QObject):
     def endOperation(self) -> None:
         self.logger.info("Ending operation")
         self._credentials_timeout_timer.stop()
-        self._processing_state = ProcessingState.ENDING_OPERATION
-        self._send(mcu.OperationControl.OP_END)
+        result = self._machine_controller.request_end_operation()
+        self._apply_controller_result(result)
         self._end_session()
 
     # ==================== GATE CONTROL ====================
@@ -692,10 +765,8 @@ class AutoSerial(QObject):
 
     @Slot()
     def closeGate(self) -> None:
-        self._pending_gate_close = True
-        self._gate_close_retry_count = 0
-        self._processing_state = ProcessingState.CLOSING_GATE
-        self._attempt_gate_close()
+        result = self._machine_controller.request_close_gate(self._gate_blocked)
+        self._apply_controller_result(result)
 
     # ==================== ITEM PROCESSING (SEQUENCED) ====================
 
@@ -713,44 +784,52 @@ class AutoSerial(QObject):
             self.logger.warning(f"Cannot {reason} - gate physically blocked!")
             self.gateBlocked.emit()
             self.handInGate.emit()
+            self._append_sensor_event("GATE_BLOCKED", 0)
             return True
         return False
 
     def _start_accept_sequence(self, item_type: str) -> bool:
-        if self._blocked_by_fraud_or_gate(f"accept {item_type}"):
+        result = self._machine_controller.request_accept_sequence(item_type, self._gate_blocked, self._fraud_hold)
+
+        if result.blocked_by_fraud:
+            self.logger.warning(f"FRAUD PREVENTION: accept {item_type} - hand detected (fraud hold)!")
             return False
 
-        if self._processing_state != ProcessingState.IDLE:
+        if result.blocked_by_gate:
+            self.logger.warning(f"Cannot accept {item_type} - gate physically blocked!")
+            self.gateBlocked.emit()
+            self.handInGate.emit()
+            self._append_sensor_event("GATE_BLOCKED", 0)
+            return False
+
+        if result.blocked_by_busy:
             self.logger.warning(f"Cannot start accept - already processing: {self._processing_state}")
             return False
 
         self.logger.info(f"Starting accept sequence for {item_type}")
-        self._pending_item_type = item_type
-        payload = mcu.ItemType.PLASTIC if item_type == "plastic" else mcu.ItemType.CAN
-
-        # Step 1: ITEM_ACCEPT (no response expected)
-        self._send(mcu.Classification.ITEM_ACCEPT, payload)
-
-        # Step 2: SORT_SET -> SORT_DONE
-        self._processing_state = ProcessingState.ACCEPT_SORT
-        self._send(mcu.MotionControl.SORT_SET, payload)
+        self._apply_controller_result(result)
         return True
 
     def _start_reject_sequence(self) -> bool:
-        if self._blocked_by_fraud_or_gate("reject item"):
+        result = self._machine_controller.request_reject_sequence(self._gate_blocked, self._fraud_hold)
+
+        if result.blocked_by_fraud:
+            self.logger.warning("FRAUD PREVENTION: reject item - hand detected (fraud hold)!")
             return False
 
-        if self._processing_state != ProcessingState.IDLE:
+        if result.blocked_by_gate:
+            self.logger.warning("Cannot reject item - gate physically blocked!")
+            self.gateBlocked.emit()
+            self.handInGate.emit()
+            self._append_sensor_event("GATE_BLOCKED", 0)
+            return False
+
+        if result.blocked_by_busy:
             self.logger.warning(f"Cannot start reject - already processing: {self._processing_state}")
             return False
 
         self.logger.info("Starting reject sequence")
-        self._pending_item_type = "reject"
-
-        self._send(mcu.Classification.ITEM_REJECT, 0x00)
-
-        self._processing_state = ProcessingState.REJECT_ACTIVATE
-        self._send(mcu.MotionControl.REJECT_ACTIVATE)
+        self._apply_controller_result(result)
         return True
 
     # ==================== High-level QML methods ====================
@@ -809,3 +888,7 @@ class AutoSerial(QObject):
             self.port.close()
 
         self.logger.info("AutoSerial cleaned up")
+
+
+
+

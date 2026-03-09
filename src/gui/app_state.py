@@ -11,12 +11,7 @@ QML_IMPORT_MINOR_VERSION = 0
 @QmlElement
 @QmlSingleton
 class AppState(QObject):
-    """Central application/workflow state.
-
-    Milestone 1 goal:
-    - Move workflow flags out of QML (Global.qml / ad-hoc properties)
-    - Keep UI layout + flow unchanged; QML binds to these reactive properties.
-    """
+    """Central application/workflow state."""
 
     handInGateChanged = Signal()
     shouldSignOutChanged = Signal()
@@ -24,9 +19,11 @@ class AppState(QObject):
     languageCodeChanged = Signal()
     activePopupChanged = Signal()
     popupPayloadChanged = Signal()
-    # Route-driven navigation (Milestone 1 — Decouple View Logic)
+
+    # Route-driven navigation
     currentRouteChanged = Signal()
     routePayloadChanged = Signal()
+
     # Recycle session state
     recyclePlasticBottlesChanged = Signal()
     recycleCansChanged = Signal()
@@ -34,21 +31,48 @@ class AppState(QObject):
     recycleHasFinishedChanged = Signal()
     recycleSessionActiveChanged = Signal()
 
+    # Bin status state (driven by MCU events)
+    recyclePlasticBinFullChanged = Signal()
+    recycleCanBinFullChanged = Signal()
+    recycleActiveFullBinChanged = Signal()
+
+    # Recycle view -> requests executed in QML
+    recycleRequestHardwareAction = Signal(str)  # action: 'can' | 'plastic' | 'other'
+    recycleRequestServerAction = Signal(str)    # action: 'send_aluminum' | 'send_plastic'
+    recycleRequestFinishPhoneNumber = Signal(str, int, int)  # phoneNumber, plastic, cans
+    recycleRequestFinishQrCode = Signal(str, int, int)       # token/phoneNumber, plastic, cans
+
+    # Recycle UI events
+    recycleUiClockRestart = Signal()
+    recycleUiShowCapture = Signal(str)
+    recycleUiHandsInserted = Signal()
+    recycleUiOtherInserted = Signal()
+    recycleUiFinishedNoPoints = Signal()
+    recycleUiFinishedQrCode = Signal()
+    recycleUiBinFull = Signal(str)  # 'plastic' | 'can'
+
     def __init__(self) -> None:
         super().__init__()
         self._hand_in_gate: bool = False
         self._should_sign_out: bool = False
-        self._language: int = 1  # 0=Arabic, 1=English (matches Global.Language order)
+        self._language: int = 1  # 0=Arabic, 1=English
         self._active_popup: str = ""
         self._popup_payload: object = {}
+
         # Route-driven navigation
         self._current_route: str = ""
         self._route_payload: object = {}
+
         # Recycle session
         self._recycle_plastic: int = 0
         self._recycle_cans: int = 0
         self._recycle_has_finished: bool = False
         self._recycle_session_active: bool = False
+
+        # Bin status (sticky until cleared in maintenance / restart)
+        self._recycle_plastic_bin_full: bool = False
+        self._recycle_can_bin_full: bool = False
+        self._recycle_active_full_bin: str = ""
 
     # --- handInGate ---
     def get_hand_in_gate(self) -> bool:
@@ -78,7 +102,6 @@ class AppState(QObject):
 
     @Slot()
     def resetWorkflowFlags(self) -> None:
-        """Convenience reset used when the app returns to Start."""
         self.set_hand_in_gate(False)
         self.set_should_sign_out(False)
         self.set_language(1)  # English
@@ -99,7 +122,6 @@ class AppState(QObject):
 
     # --- languageCode (derived) ---
     def get_language_code(self) -> str:
-        # 0 -> ar, 1 -> en
         return "ar" if int(self._language) == 0 else "en"
 
     languageCode = Property(str, get_language_code, notify=languageCodeChanged)
@@ -122,8 +144,7 @@ class AppState(QObject):
         return self._popup_payload
 
     def set_popup_payload(self, value: object) -> None:
-        v = value if value is not None else {}
-        self._popup_payload = v
+        self._popup_payload = value if value is not None else {}
         self.popupPayloadChanged.emit()
 
     popupPayload = Property(object, get_popup_payload, set_popup_payload, notify=popupPayloadChanged)
@@ -143,9 +164,8 @@ class AppState(QObject):
         return self._current_route
 
     def set_current_route(self, value: str) -> None:
-        v = str(value or "")
+        self._current_route = str(value or "")
         # Always emit even if same route (allows re-navigating to same screen)
-        self._current_route = v
         self.currentRouteChanged.emit()
 
     currentRoute = Property(str, get_current_route, set_current_route, notify=currentRouteChanged)
@@ -162,16 +182,10 @@ class AppState(QObject):
 
     @Slot(str, "QVariant")
     def navigateTo(self, route: str, payload=None) -> None:
-        """Set the current route; StateManager reacts via onCurrentRouteChanged.
-        Satisfies PDF Phase 2 — Decouple View Logic:
-        AppState becomes source of truth for current screen.
-        StateManager is a pure renderer that reacts to state.
-        """
         self.set_route_payload(payload if payload is not None else {})
         self.set_current_route(route)
 
-# ─── Recycle Session ────────────────────────────────────────────────────
-
+    # --- Recycle counters ---
     def get_recycle_plastic(self) -> int:
         return self._recycle_plastic
 
@@ -193,7 +207,6 @@ class AppState(QObject):
     def get_recycle_points(self) -> int:
         return 2 * self._recycle_plastic + 4 * self._recycle_cans
 
-    # recyclePoints is derived — notified whenever plastic or cans change
     recyclePoints = Property(int, get_recycle_points, notify=recyclePointsChanged)
 
     def get_recycle_has_finished(self) -> bool:
@@ -204,6 +217,79 @@ class AppState(QObject):
         self.recycleHasFinishedChanged.emit()
 
     recycleHasFinished = Property(bool, get_recycle_has_finished, set_recycle_has_finished, notify=recycleHasFinishedChanged)
+
+    # --- Recycle bin full flags ---
+    def get_recycle_plastic_bin_full(self) -> bool:
+        return self._recycle_plastic_bin_full
+
+    def set_recycle_plastic_bin_full(self, v: bool) -> None:
+        b = bool(v)
+        if self._recycle_plastic_bin_full == b:
+            return
+        self._recycle_plastic_bin_full = b
+        self.recyclePlasticBinFullChanged.emit()
+
+    recyclePlasticBinFull = Property(bool, get_recycle_plastic_bin_full, set_recycle_plastic_bin_full, notify=recyclePlasticBinFullChanged)
+
+    def get_recycle_can_bin_full(self) -> bool:
+        return self._recycle_can_bin_full
+
+    def set_recycle_can_bin_full(self, v: bool) -> None:
+        b = bool(v)
+        if self._recycle_can_bin_full == b:
+            return
+        self._recycle_can_bin_full = b
+        self.recycleCanBinFullChanged.emit()
+
+    recycleCanBinFull = Property(bool, get_recycle_can_bin_full, set_recycle_can_bin_full, notify=recycleCanBinFullChanged)
+
+    def get_recycle_active_full_bin(self) -> str:
+        return self._recycle_active_full_bin
+
+    def set_recycle_active_full_bin(self, binName: str) -> None:
+        b = str(binName or "").strip().lower()
+        if b not in ("", "plastic", "can"):
+            b = ""
+        if self._recycle_active_full_bin == b:
+            return
+        self._recycle_active_full_bin = b
+        self.recycleActiveFullBinChanged.emit()
+
+    recycleActiveFullBin = Property(str, get_recycle_active_full_bin, set_recycle_active_full_bin, notify=recycleActiveFullBinChanged)
+
+    @Slot(str)
+    def markRecycleBinFull(self, binName: str) -> None:
+        # Full-bin overlays are session-scoped in UI.
+        if not self._recycle_session_active:
+            return
+        b = str(binName or "").strip().lower()
+        if "plastic" in b:
+            self.set_recycle_plastic_bin_full(True)
+            self.set_recycle_active_full_bin("plastic")
+        elif "can" in b:
+            self.set_recycle_can_bin_full(True)
+            self.set_recycle_active_full_bin("can")
+
+    @Slot(str)
+    def clearRecycleBinFull(self, binName: str = "") -> None:
+        b = str(binName or "").strip().lower()
+        if b == "":
+            self.set_recycle_plastic_bin_full(False)
+            self.set_recycle_can_bin_full(False)
+            self.set_recycle_active_full_bin("")
+            return
+        if "plastic" in b:
+            self.set_recycle_plastic_bin_full(False)
+            if not self._recycle_can_bin_full:
+                self.set_recycle_active_full_bin("")
+            else:
+                self.set_recycle_active_full_bin("can")
+        elif "can" in b:
+            self.set_recycle_can_bin_full(False)
+            if not self._recycle_plastic_bin_full:
+                self.set_recycle_active_full_bin("")
+            else:
+                self.set_recycle_active_full_bin("plastic")
 
     @Slot()
     def incrementRecyclePlastic(self) -> None:
@@ -221,11 +307,18 @@ class AppState(QObject):
 
     @Slot()
     def startRecycleSession(self) -> None:
-        """Reset all session counters. Call from RecycleView.Component.onCompleted."""
         self._recycle_plastic = 0
         self._recycle_cans = 0
         self._recycle_has_finished = False
         self._recycle_session_active = True
+
+        # Dev/prod parity requirement for UI testing:
+        # each new recycle session starts from a clean visual state,
+        # then MCU full-bin events rebuild state.
+        self.set_recycle_plastic_bin_full(False)
+        self.set_recycle_can_bin_full(False)
+        self.set_recycle_active_full_bin("")
+
         self.recyclePlasticBottlesChanged.emit()
         self.recycleCansChanged.emit()
         self.recyclePointsChanged.emit()
@@ -234,6 +327,78 @@ class AppState(QObject):
 
     @Slot()
     def endRecycleSession(self) -> None:
-        """Clean up session. Call from RecycleView.Component.onDestruction."""
         self._recycle_session_active = False
         self.recycleSessionActiveChanged.emit()
+
+    # --- Recycle Prediction / Finish Logic ---
+    @Slot(str, int, str, str)
+    def onPredictionResult(self, pred: str, userType: int, phoneNumber: str, predImage: str = "") -> None:
+        p = str(pred or "")
+        u = int(userType)
+
+        if p == "hand":
+            self.recycleUiHandsInserted.emit()
+            self.recycleUiClockRestart.emit()
+            return
+
+        if p == "aluminum":
+            if self._recycle_can_bin_full:
+                self.recycleUiBinFull.emit("can")
+                self.recycleUiClockRestart.emit()
+                return
+            self.incrementRecycleCans()
+            self.recycleRequestHardwareAction.emit("can")
+            if u == 1:  # QrCode
+                self.recycleRequestServerAction.emit("send_aluminum")
+            self.recycleUiClockRestart.emit()
+            if predImage:
+                self.recycleUiShowCapture.emit(str(predImage))
+            return
+
+        if p == "plastic":
+            if self._recycle_plastic_bin_full:
+                self.recycleUiBinFull.emit("plastic")
+                self.recycleUiClockRestart.emit()
+                return
+            self.incrementRecyclePlastic()
+            self.recycleRequestHardwareAction.emit("plastic")
+            if u == 1:  # QrCode
+                self.recycleRequestServerAction.emit("send_plastic")
+            self.recycleUiClockRestart.emit()
+            if predImage:
+                self.recycleUiShowCapture.emit(str(predImage))
+            return
+
+        if p == "other":
+            self.recycleRequestHardwareAction.emit("other")
+            self.recycleUiOtherInserted.emit()
+            self.recycleUiClockRestart.emit()
+            return
+
+    @Slot(int, str)
+    def onRecycleClockFinished(self, userType: int, phoneNumber: str) -> None:
+        if self._recycle_has_finished:
+            return
+        self.markRecycleFinished()
+
+        points = self.get_recycle_points()
+        u = int(userType)
+        pn = str(phoneNumber or "")
+
+        if points == 0:
+            self.recycleUiFinishedNoPoints.emit()
+            return
+
+        if u == 1:  # QrCode
+            self.recycleUiFinishedQrCode.emit()
+            self.recycleRequestFinishQrCode.emit(pn, int(self._recycle_plastic), int(self._recycle_cans))
+            return
+
+        self.recycleRequestFinishPhoneNumber.emit(pn, int(self._recycle_plastic), int(self._recycle_cans))
+
+
+
+
+
+
+

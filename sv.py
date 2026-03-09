@@ -15,6 +15,7 @@ import requests
 import os
 import socket
 import logging
+import logging.handlers
 import shutil
 import subprocess
 import tarfile
@@ -40,6 +41,7 @@ MACHINE_API_KEY = "ojs7JhND.0UEhbrBfyMFstQBjjCG8I3o2fCPTUxb7"
 
 LOGGER_FORMAT = "%(asctime)s %(levelname)s:%(name)s %(message)s"
 LOGGER_DATEFMT = "%Y-%m-%d %H:%M:%S"
+LOG_ROTATION_BACKUP_COUNT = int(os.getenv("SV_LOG_BACKUP_COUNT", "14"))
 STATE_DIR = Path(os.getenv("XDG_STATE_HOME", "~/.local/state")).expanduser().joinpath("dropme")
 DATA_DIR = Path("~/.local/share/dropme/gui").expanduser()
 
@@ -233,7 +235,13 @@ def main(argv: list[str] | None = None) -> int | None:
     if args.log_file == "-":
         log_handler = logging.StreamHandler(sys.stdout)
     else:
-        log_handler = logging.FileHandler(args.log_file)
+        log_handler = logging.handlers.TimedRotatingFileHandler(
+            args.log_file,
+            when="midnight",
+            interval=1,
+            backupCount=LOG_ROTATION_BACKUP_COUNT,
+            encoding="utf-8",
+        )
 
     logging.basicConfig(format=LOGGER_FORMAT, datefmt=LOGGER_DATEFMT, level=args.log_level, handlers=[log_handler])
 

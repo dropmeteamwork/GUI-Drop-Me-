@@ -8,6 +8,7 @@ from enum import Enum
 from dataclasses import dataclass
 from typing import Optional, Tuple, List
 import logging
+from logging.handlers import TimedRotatingFileHandler
 
 import cv2
 import numpy as np
@@ -98,6 +99,7 @@ class Config:
     # Logging
     LOG_LEVEL        = logging.INFO
     ENABLE_CONSOLE_LOG = bool(os.getenv('ENABLE_CONSOLE_LOG', '0'))
+    LOG_BACKUP_COUNT = int(os.getenv('ML_LOG_BACKUP_COUNT', '14'))
 
 
 def setup_logging() -> logging.Logger:
@@ -106,7 +108,13 @@ def setup_logging() -> logging.Logger:
     logger = logging.getLogger("RVM_AI")
     logger.setLevel(Config.LOG_LEVEL)
     logger.handlers.clear()
-    fh = logging.FileHandler(log_file)
+    fh = TimedRotatingFileHandler(
+        log_file,
+        when="midnight",
+        interval=1,
+        backupCount=Config.LOG_BACKUP_COUNT,
+        encoding="utf-8",
+    )
     fh.setLevel(Config.LOG_LEVEL)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)

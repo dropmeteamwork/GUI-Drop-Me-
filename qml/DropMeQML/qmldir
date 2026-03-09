@@ -1,4 +1,5 @@
-module DropMeQML
+﻿module DropMeQML
 MainWindow MainWindow.qml
 singleton Global Global.qml
 singleton EventBus EventBus.qml
+RecycleFlowController RecycleFlowController.qml

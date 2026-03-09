@@ -1,10 +1,14 @@
-import sys
+﻿import sys
 import os
 from pathlib import Path
 
 import gui.server      # registers Server
 import gui.autoserial  # registers AutoSerial
 import gui.app_state   # registers AppState singleton
+import gui.recycle_coordinator  # registers RecycleCoordinator
+import gui.recycle_flow_coordinator  # registers RecycleFlowCoordinator
+import gui.ui_coordinator  # registers UiCoordinator
+import gui.watchdog  # registers Watchdog
 
 # Force-add project root to sys.path so 'from gui import ...' works
 script_dir = Path(__file__).resolve().parent  # src/gui
@@ -27,14 +31,15 @@ from gui.system_info import SystemInfo
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="A script with development and simulation flags.")
-    
+
     parser.add_argument(
         "--dev",
         action="store_true",
         help="Enable development mode."
     )
-    
+
     args = parser.parse_args()
+    os.environ["DROPME_DEV"] = "1" if args.dev else "0"
 
     QLoggingCategory.setFilterRules("qt.multimedia.ffmpeg=false")
 
@@ -67,7 +72,7 @@ def main() -> None:
     app_state = engine.singletonInstance("DropMe", "AppState")
     if app_state is not None:
         app_state.resetWorkflowFlags()
-        
+
     exit_code = app.exec()
     del engine
     sys.exit(exit_code)
@@ -75,3 +80,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

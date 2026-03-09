@@ -24,6 +24,12 @@ Item {
         timer.running = true
     }
 
+    function forceFinish() {
+        timer.running = false
+        resource.clockIndex = resource.clockNames.length - 1
+        clock.finished()
+    }
+
     Resource {
         id: resource
         property list<string> clockNames: [

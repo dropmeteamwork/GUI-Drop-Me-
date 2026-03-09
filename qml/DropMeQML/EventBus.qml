@@ -9,6 +9,7 @@ QtObject {
 
     // Hardware-derived events (abstracted from Serial/AutoSerial)
     signal hwHandInGate()
+    signal hwGateCleared()
     signal hwBinFull(string binName)
     signal hwError(string errorName, int errorId)
 

@@ -1,0 +1,20 @@
+{
+  "ts": "2026-03-09T01:57:25+02:00",
+  "port": "COM10",
+  "session_id": "0148e1e29e14446b89accd238b1c4e4e",
+  "system": {
+    "busy": false,
+    "operation_active": true
+  },
+  "gate": {
+    "open": false,
+    "blocked": false
+  },
+  "bins": {
+    "plastic_full": true,
+    "can_full": true,
+    "reject_full": false
+  },
+  "last_weight_grams": 19,
+  "last_error": ""
+}

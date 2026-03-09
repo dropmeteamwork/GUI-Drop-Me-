@@ -72,6 +72,9 @@ FINISH_RECYCLE_QRCODE_REQUEST.setRawHeader(AUTHORIZATION_HEADER, AUTHORIZATION_H
 FINISH_RECYCLE_QRCODE_REQUEST.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
 FINISH_RECYCLE_QRCODE_DATA = b'""'
 
+# Keep end-of-session UX responsive when network is slow/unreachable.
+PHONE_FINISH_REQUEST_TIMEOUT_MS = 2500
+
 
 # ==================== DATA MODELS ====================
 
@@ -199,16 +202,15 @@ class Server(QObject):
         return self._system_info
 
     def _is_dev_mode(self) -> bool:
-        """
-        True when SystemInfo.dev_mode is True.
-        Fallback: environment variable DROPME_DEV=1.
-        """
+        """True when the app runs in UI dev mode (windowed tools, test controls)."""
         si = self._get_system_info()
         if si is not None:
-            # Keep your original property name usage
             return bool(getattr(si, "dev_mode", False))
-
         return os.environ.get("DROPME_DEV", "0") == "1"
+
+    def _should_skip_ml_in_dev(self) -> bool:
+        """In --dev mode, skip ML inference and model loading unconditionally."""
+        return self._is_dev_mode()
 
     def _ensure_mlmodel(self) -> bool:
         """
@@ -216,9 +218,8 @@ class Server(QObject):
         Returns True if model is available, False otherwise.
         In dev mode: always returns False (model not needed).
         """
-        if self._is_dev_mode():
-            # keep log but avoid spamming by logging only once per session
-            self.logger.info("Dev mode - ML model not loaded")
+        if self._should_skip_ml_in_dev():
+            self.logger.info("Dev mode enabled - ML model not loaded")
             return False
 
         if self._mlmodel_loaded:
@@ -247,7 +248,7 @@ class Server(QObject):
             self.logger.info("ML model loaded successfully")
             return True
         except Exception as e:
-            self.logger.error(f"Failed to load ML model: {e}", exc_info=True)
+            self.logger.error(f"Failed to load ML model: {e}")
             with self._ml_lock:
                 self._mlmodel_loading = False
             return False
@@ -306,7 +307,7 @@ class Server(QObject):
                 start_new_session=True,
             )
         except Exception as e:
-            self.logger.error(f"updateGUI failed: {e}", exc_info=True)
+            self.logger.error(f"updateGUI failed: {e}")
 
     # ==================== RECYCLING API ====================
 
@@ -327,6 +328,10 @@ class Server(QObject):
         req = QNetworkRequest(QUrl(f"{SERVER_BASE_URL}/machines/recycle/add/{MACHINE_NAME}/{phone_number}/"))
         req.setRawHeader(AUTHORIZATION_HEADER, AUTHORIZATION_HEADER_VALUE)
         req.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
+        try:
+            req.setTransferTimeout(PHONE_FINISH_REQUEST_TIMEOUT_MS)
+        except Exception:
+            pass
 
         recycle = Recycle(bottles, cans, phone_number)
 
@@ -341,9 +346,9 @@ class Server(QObject):
     def sendDevPrediction(self, item: str, capturePath: str = "") -> None:
         """
         Dev slot used by QML to simulate a prediction upload.
-        ✅ Reuses a single AWSUploader instance (no repeated threads / boto init)
-        ✅ Never blocks UI thread with direct S3 put_object
-        ✅ If offline, it will queue locally and background sync later
+        ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Reuses a single AWSUploader instance (no repeated threads / boto init)
+        ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Never blocks UI thread with direct S3 put_object
+        ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ If offline, it will queue locally and background sync later
         """
         try:
             uploader = getattr(self, "uploader", None)
@@ -374,7 +379,7 @@ class Server(QObject):
             }
 
             if capturePath and os.path.exists(capturePath):
-                # ✅ queue upload (non-blocking)
+                # ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ queue upload (non-blocking)
                 uploader.upload_prediction(
                     image_path=capturePath,
                     prediction_image_bytes=b"",
@@ -386,7 +391,7 @@ class Server(QObject):
                 self.logger.info(f"Dev-mode metadata-only upload queued: {res}")
 
         except Exception as e:
-            self.logger.error(f"Dev-mode upload failed: {e}", exc_info=True)
+            self.logger.error(f"Dev-mode upload failed: {e}")
 
     # ==================== PREDICTION ====================
 
@@ -401,9 +406,9 @@ class Server(QObject):
             self.pending_capture_path = capturePath
             self.logger.info(f"QR flow: Tracking capture {Path(capturePath).name} for user_id update")
 
-        # Dev mode: skip ML and emit dummy result (UNCHANGED external behavior)
-        if self._is_dev_mode():
-            self.logger.info(f"Dev mode: Skipping ML prediction for {capturePath}")
+        # Optional fast dev mode: skip ML only when explicitly requested.
+        if self._should_skip_ml_in_dev():
+            self.logger.info(f"Dev mode skip-ML enabled: skipping prediction for {capturePath}")
             self.predictionReady.emit(["none", ""], capturePath, "")
             return
 
@@ -470,7 +475,7 @@ class Server(QObject):
             self._emit_prediction_ready_mainthread([item, qml_uri], capturePath, system_path or "")
 
         except Exception as e:
-            self.logger.error(f"Prediction failed: {e}", exc_info=True)
+            self.logger.error(f"Prediction failed: {e}")
             if system_path and os.path.exists(system_path):
                 try:
                     os.unlink(system_path)
@@ -498,7 +503,7 @@ class Server(QObject):
                 os.remove(path)
                 self.logger.info(f"Cleaned up temp file: {path}")
             except Exception as e:
-                self.logger.error(f"Failed to delete {path}: {e}", exc_info=True)
+                self.logger.error(f"Failed to delete {path}: {e}")
 
     # ==================== RESPONSE HANDLERS ====================
 
@@ -529,7 +534,7 @@ class Server(QObject):
 
     def handleFinishRecyclePhoneNumber(self, reply: QNetworkReply) -> None:
         if reply.error() != QNetworkReply.NetworkError.NoError:
-            # Network failure — keep the queued item for a future retry.
+            # Network failure ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â keep the queued item for a future retry.
             self.finishedPhoneNumberRecycle.emit(True)
             return
 
@@ -548,6 +553,10 @@ class Server(QObject):
         req = QNetworkRequest(QUrl(f"{SERVER_BASE_URL}/machines/recycle/add/{MACHINE_NAME}/{next_in_queue.phoneNumber}/"))
         req.setRawHeader(AUTHORIZATION_HEADER, AUTHORIZATION_HEADER_VALUE)
         req.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
+        try:
+            req.setTransferTimeout(PHONE_FINISH_REQUEST_TIMEOUT_MS)
+        except Exception:
+            pass
         self.finish_recycle_phone_number_manager.post(req, next_in_queue.data().to_json().encode())
 
     def handleRecycleResponse(self, reply: QNetworkReply) -> None:
@@ -561,7 +570,7 @@ class Server(QObject):
         try:
             response = json.loads(data)
         except Exception as e:
-            self.logger.error(f"Failed to parse recycle response JSON: {e}", exc_info=True)
+            self.logger.error(f"Failed to parse recycle response JSON: {e}")
             return
 
         user_id = response.get("user_id")

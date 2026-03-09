@@ -1,6 +1,7 @@
 import json
 import boto3
 import os
+import copy
 from datetime import datetime
 from botocore.exceptions import ClientError, EndpointConnectionError
 from pathlib import Path
@@ -10,6 +11,8 @@ import time
 from typing import Optional, Tuple
 
 AWS_DEBUG_LOG = Path(tempfile.gettempdir()) / "aws_debug.log"
+SERIAL_BUCKET_PROD = "ai-data-001"
+SERIAL_BUCKET_DEV = "testing-only-001"
 
 def _load_test_config():
     """
@@ -31,6 +34,10 @@ def _load_test_config():
 
 class AWSUploader:
     """Upload images and predictions to AWS S3"""
+    _instance = None
+    _instance_lock = threading.Lock()
+    _sync_thread_started = False
+    _sync_thread_lock = threading.Lock()
 
     #def __init__(self):
         # self.bucket_name = os.getenv('AWS_BUCKET_NAME', 'ai-data-001')
@@ -39,7 +46,16 @@ class AWSUploader:
         # aws_region = os.getenv('AWS_REGION', 'eu-central-1')
         # self.machine_name = os.getenv('MACHINE_NAME', 'maadi_club')
 
+    def __new__(cls, *args, **kwargs):
+        with cls._instance_lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
+        if getattr(self, "_initialized", False):
+            return
+        self._initialized = True
         # Load dropme_config.json for testing (if present)
         cfg = _load_test_config()
         if cfg:
@@ -67,10 +83,15 @@ class AWSUploader:
         self.metadata_dir.mkdir(parents=True, exist_ok=True)
         self.queue_dir.mkdir(parents=True, exist_ok=True)
 
+        self._serial_state_lock = threading.Lock()
+        self._last_serial_fingerprint = ""
+        self._last_serial_queue_monotonic = 0.0
+        self.serial_min_upload_interval_sec = float(os.getenv("SERIAL_STATE_MIN_UPLOAD_INTERVAL_SEC", "3"))
 
         if not aws_key or not aws_secret:
             print("[AWSUploader] WARNING: AWS credentials not set")
             self.s3_client = None
+            self.sync_thread = None
             return
 
         try:
@@ -85,10 +106,13 @@ class AWSUploader:
             print(f"[AWSUploader] Failed to initialize: {e}")
             self.s3_client = None
 
-        # Start background sync thread
-        self.sync_thread = threading.Thread(target=self._background_sync, daemon=True)
-        self.sync_thread.start()
-
+        # Start exactly one background sync thread per process
+        self.sync_thread = None
+        with AWSUploader._sync_thread_lock:
+            if not AWSUploader._sync_thread_started:
+                self.sync_thread = threading.Thread(target=self._background_sync, daemon=True)
+                self.sync_thread.start()
+                AWSUploader._sync_thread_started = True
         # Sync existing captures on startup
         #threading.Thread(target=self._sync_existing_captures, daemon=True).start()
 
@@ -115,12 +139,65 @@ class AWSUploader:
                 f.write(f"{datetime.now()}: Exception: {type(e).__name__} - {str(e)}\n")
             return False
 
+
+    def _is_dev_mode(self) -> bool:
+        return str(os.getenv("DROPME_DEV", "0")).strip().lower() in ("1", "true", "yes", "on")
+
+    def _serial_target_bucket(self) -> str:
+        return SERIAL_BUCKET_DEV if self._is_dev_mode() else SERIAL_BUCKET_PROD
+
+    def _serial_state_fingerprint(self, state_dict: dict) -> str:
+        stable = copy.deepcopy(state_dict)
+        stable["updated_at"] = ""
+        conn = stable.get("connection", {})
+        for k in ("last_rx_ts", "last_tx_ts", "last_disconnect_ts", "last_rx_seq", "last_tx_seq", "last_rx_raw", "last_tx_raw"):
+            if k in conn:
+                conn[k] = "" if ("ts" in k or "raw" in k) else None
+
+        for group in ("system_status", "operation", "motion", "classification", "sensor", "errors"):
+            section = stable.get(group, {})
+            if isinstance(section, dict) and "last_update" in section:
+                section["last_update"] = ""
+
+        return json.dumps(stable, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+    def upload_serial_state(self, state_dict: dict) -> dict:
+        """Queue protocol state JSON for S3 mirror using timestamped object keys (append-style)."""
+        try:
+            now_mono = time.monotonic()
+            fingerprint = self._serial_state_fingerprint(state_dict)
+
+            with self._serial_state_lock:
+                if fingerprint == self._last_serial_fingerprint:
+                    return {"success": True, "queued": False, "message": "Serial state unchanged; skipped"}
+                if (now_mono - self._last_serial_queue_monotonic) < self.serial_min_upload_interval_sec:
+                    return {"success": True, "queued": False, "message": "Serial state throttled; skipped"}
+
+            safe_machine = self.machine_name.replace("'", "").replace(" ", "_")
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            ts_us = datetime.now().strftime("%f")
+            queue_item = {
+                "mode": "serial_state",
+                "target_bucket": self._serial_target_bucket(),
+                "json_s3_key": f"serial_data/{safe_machine}/{ts}_{ts_us}.json",
+                "serial_state": state_dict,
+                "serial_state_ts": ts,
+                "queued_at": datetime.now().isoformat(),
+            }
+            self._save_to_queue(queue_item)
+            with self._serial_state_lock:
+                self._last_serial_fingerprint = fingerprint
+                self._last_serial_queue_monotonic = now_mono
+            return {"success": True, "queued": True, "message": "Queued timestamped serial state upload"}
+        except Exception as e:
+            print(f"[AWSUploader] Failed to queue serial state: {e}")
+            return {"success": False, "queued": False, "error": str(e)}
     def _save_to_queue(self, queue_item: dict) -> bool:
         """Save upload job to local queue"""
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-            # ✅ Include capture_id in filename for easier lookup
-            capture_id = queue_item.get('prediction_data', {}).get('capture_id', 'unknown')
+            # ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ Include capture_id in filename for easier lookup
+            capture_id = queue_item.get("prediction_data", {}).get("capture_id") or queue_item.get("serial_state_ts", "unknown")
             queue_file = self.queue_dir / f"queue_{timestamp}_{capture_id}.json"
             #queue_file = self.queue_dir / f"queue_{timestamp}.json"
             with open(queue_file, 'w') as f:
@@ -288,7 +365,7 @@ class AWSUploader:
     def upload_prediction(self,
                           image_path: str,
                           prediction_image_bytes: bytes,
-                          metadata: dict) -> dict:  # ✅ Accept metadata dict
+                          metadata: dict) -> dict:  # ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ Accept metadata dict
         """Upload prediction to S3 or queue if offline - NON-BLOCKING"""
 
         if not os.path.exists(image_path):
@@ -305,7 +382,7 @@ class AWSUploader:
         s3_image_key = f"captures/{safe_machine}/{timestamp}/{image_file.name}"
         s3_json_key = f"predictions/{safe_machine}/{timestamp}/prediction.json"
 
-        # ✅ Use the metadata dict directly (add S3 keys)
+        # ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦ Use the metadata dict directly (add S3 keys)
         prediction_data = metadata.copy()
         prediction_data['image_s3_key'] = s3_image_key
 
@@ -374,6 +451,26 @@ class AWSUploader:
             with open(queue_file, 'r') as f:
                 queue_item = json.load(f)
                 mode = queue_item.get("mode", "image_and_json")
+            if mode == "serial_state":
+                try:
+                    if self.s3_client is None:
+                        return False
+
+                    target_bucket = queue_item.get("target_bucket") or self._serial_target_bucket()
+                    self.s3_client.put_object(
+                        Bucket=target_bucket,
+                        Key=queue_item["json_s3_key"],
+                        Body=json.dumps(queue_item["serial_state"], ensure_ascii=False, indent=2),
+                        ContentType="application/json"
+                    )
+
+                    queue_file.unlink()
+                    print(f"[AWSUploader] Uploaded serial state: s3://{target_bucket}/{queue_item['json_s3_key']}")
+                    return True
+                except Exception as e:
+                    print(f"[AWSUploader] Error uploading serial state {queue_file.name}: {e}")
+                    return False
+
             if mode == "metadata_only":
                 try:
                     if self.s3_client is None:
@@ -480,18 +577,11 @@ class AWSUploader:
             try:
                 time.sleep(30)  # Check every 30 seconds
 
-                if not self._is_online():
-                    continue
-
                 queue_files = sorted(self.queue_dir.glob("queue_*.json"))
                 if queue_files:
                     print(f"[AWSUploader] Processing {len(queue_files)} queued uploads...")
 
                     for queue_file in queue_files:
-                        if not self._is_online():
-                            print("[AWSUploader] Lost connection, pausing sync")
-                            break
-
                         self._process_queue_item(queue_file)
                         time.sleep(1)  # Rate limiting
 
@@ -510,4 +600,3 @@ class AWSUploader:
         except Exception as e:
             print(f"[AWSUploader] Error getting queue status: {e}")
             return {'online': False, 'queued_items': 0, 'oldest_queued': None}
-

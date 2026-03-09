@@ -1,10 +1,15 @@
-{
+﻿{
     "files": [
         "src/gui/main.py",
         "src/gui/system_info.py",
         "src/gui/serial.py",
         "src/gui/autoserial.py",
         "src/gui/server.py",
+        "src/gui/machine_controller.py",
+        "src/gui/stm_interface.py",
+        "src/gui/recycle_coordinator.py",`r`n        "src/gui/recycle_flow_coordinator.py",
+        "src/gui/ui_coordinator.py",
+        "src/gui/watchdog.py",`r`n        "src/gui/protocol_telemetry_service.py",
 		"qml/DropMeQML/Clock.qml",
 		"qml/DropMeQML/EnterCredentialsView.qml",
 		"qml/DropMeQML/Global.qml",
@@ -30,3 +35,4 @@
 		"qml/DropMeQML/Videos.qml"
     ]
 }
+

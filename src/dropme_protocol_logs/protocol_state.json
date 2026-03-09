@@ -1,0 +1,232 @@
+{
+  "classification": {
+    "last_cmd": "ITEM_ACCEPT",
+    "last_direction": "TX",
+    "last_payload": 1,
+    "last_update": "2026-03-09T01:56:47+02:00"
+  },
+  "commands": {
+    "BIN_CAN_FULL": {
+      "cmd": 226,
+      "direction": "RX",
+      "payload": 1
+    },
+    "BIN_PLASTIC_FULL": {
+      "cmd": 225,
+      "direction": "RX",
+      "payload": 1
+    },
+    "BIN_REJECT_FULL": {
+      "cmd": 227,
+      "direction": "",
+      "payload": null
+    },
+    "CONVEYOR_DONE": {
+      "cmd": 70,
+      "direction": "RX",
+      "payload": 0
+    },
+    "CONVEYOR_RUN": {
+      "cmd": 34,
+      "direction": "TX",
+      "payload": 50
+    },
+    "CONVEYOR_STOP": {
+      "cmd": 35,
+      "direction": "",
+      "payload": null
+    },
+    "ERR_BIN_FULL": {
+      "cmd": 243,
+      "direction": "",
+      "payload": null
+    },
+    "ERR_GATE_TIMEOUT": {
+      "cmd": 240,
+      "direction": "",
+      "payload": null
+    },
+    "ERR_MOTOR_STALL": {
+      "cmd": 241,
+      "direction": "",
+      "payload": null
+    },
+    "ERR_SENSOR_FAIL": {
+      "cmd": 242,
+      "direction": "",
+      "payload": null
+    },
+    "GATE_BLOCKED": {
+      "cmd": 69,
+      "direction": "RX",
+      "payload": 1
+    },
+    "GATE_CLOSE": {
+      "cmd": 33,
+      "direction": "TX",
+      "payload": 0
+    },
+    "GATE_CLOSED": {
+      "cmd": 68,
+      "direction": "RX",
+      "payload": 0
+    },
+    "GATE_OPEN": {
+      "cmd": 32,
+      "direction": "",
+      "payload": null
+    },
+    "GATE_OPENED": {
+      "cmd": 67,
+      "direction": "",
+      "payload": null
+    },
+    "ITEM_ACCEPT": {
+      "cmd": 48,
+      "direction": "TX",
+      "payload": 1
+    },
+    "ITEM_REJECT": {
+      "cmd": 49,
+      "direction": "",
+      "payload": null
+    },
+    "OP_CANCEL": {
+      "cmd": 17,
+      "direction": "",
+      "payload": null
+    },
+    "OP_END": {
+      "cmd": 18,
+      "direction": "TX",
+      "payload": 0
+    },
+    "OP_NEW": {
+      "cmd": 16,
+      "direction": "TX",
+      "payload": 0
+    },
+    "REJECT_ACTIVATE": {
+      "cmd": 36,
+      "direction": "",
+      "payload": null
+    },
+    "REJECT_DONE": {
+      "cmd": 72,
+      "direction": "",
+      "payload": null
+    },
+    "REJECT_HOME": {
+      "cmd": 37,
+      "direction": "",
+      "payload": null
+    },
+    "REJECT_HOME_OK": {
+      "cmd": 73,
+      "direction": "",
+      "payload": null
+    },
+    "SORT_DONE": {
+      "cmd": 71,
+      "direction": "RX",
+      "payload": 1
+    },
+    "SORT_SET": {
+      "cmd": 38,
+      "direction": "TX",
+      "payload": 1
+    },
+    "SYS_BUSY": {
+      "cmd": 65,
+      "direction": "",
+      "payload": null
+    },
+    "SYS_IDLE": {
+      "cmd": 66,
+      "direction": "RX",
+      "payload": 0
+    },
+    "SYS_INIT": {
+      "cmd": 1,
+      "direction": "",
+      "payload": null
+    },
+    "SYS_PING": {
+      "cmd": 3,
+      "direction": "TX",
+      "payload": 0
+    },
+    "SYS_READY": {
+      "cmd": 64,
+      "direction": "RX",
+      "payload": 0
+    },
+    "SYS_RESET": {
+      "cmd": 2,
+      "direction": "",
+      "payload": null
+    },
+    "SYS_STOP_ALL": {
+      "cmd": 4,
+      "direction": "",
+      "payload": null
+    },
+    "WEIGHT_DATA": {
+      "cmd": 224,
+      "direction": "RX",
+      "payload": 19
+    }
+  },
+  "connection": {
+    "connected": true,
+    "last_disconnect_ts": "",
+    "last_rx_raw": "aa 00 44 00 94 0d",
+    "last_rx_seq": 0,
+    "last_rx_ts": "2026-03-09T01:57:25+02:00",
+    "last_tx_raw": "aa 0e 12 00 8c b2",
+    "last_tx_seq": 14,
+    "last_tx_ts": "2026-03-09T01:57:33+02:00",
+    "port": "COM10"
+  },
+  "errors": {
+    "last_direction": "",
+    "last_error_cmd": "",
+    "last_error_payload": 0,
+    "last_update": ""
+  },
+  "machine_name": "maadi_club",
+  "motion": {
+    "gate_blocked": false,
+    "gate_open": false,
+    "last_cmd": "GATE_CLOSE",
+    "last_direction": "TX",
+    "last_payload": 0,
+    "last_update": "2026-03-09T01:57:03+02:00"
+  },
+  "operation": {
+    "active": false,
+    "last_cmd": "OP_END",
+    "last_direction": "TX",
+    "last_payload": 0,
+    "last_update": "2026-03-09T01:57:33+02:00"
+  },
+  "schema_version": 1,
+  "sensor": {
+    "bin_can_full": true,
+    "bin_plastic_full": true,
+    "bin_reject_full": false,
+    "last_cmd": "BIN_CAN_FULL",
+    "last_direction": "RX",
+    "last_payload": 1,
+    "last_update": "2026-03-09T01:57:15+02:00",
+    "weight_grams": 19
+  },
+  "system_status": {
+    "last_cmd": "GATE_CLOSED",
+    "last_direction": "RX",
+    "last_payload": 0,
+    "last_update": "2026-03-09T01:57:25+02:00",
+    "state": "idle"
+  },
+  "updated_at": "2026-03-09T01:57:33+02:00"
+}

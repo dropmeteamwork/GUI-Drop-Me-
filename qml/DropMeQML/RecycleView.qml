@@ -1,4 +1,4 @@
-import QML
+﻿import QML
 import QtQuick
 import QtQuick.Controls
 import QtMultimedia
@@ -8,7 +8,10 @@ import DropMe
 Item {
     required property int userType
     required property ImageCapture imageCapture
+
     property string phoneNumber: ""
+    property bool processingItem: false
+    property bool waitingPhoneFinishResponse: false
 
     signal finishedWithNoPoints
     signal finishedWithQrCode
@@ -19,179 +22,38 @@ Item {
     signal handsInserted
     signal showCapture(string path)
     signal showCamera
+    signal captureRequested
+    signal sessionClockFinished
 
     id: view
 
-    // Add this timer here (at component level, not inside function)
-    Timer {
-        id: cameraRestoreTimer
-        interval: 1500  // Adjust duration as needed
-        repeat: false
-        onTriggered: view.showCamera()
+    function startClock() { clock.start() }
+    function restartClock() { clock.reset(); clock.start() }
+    function forceFinishClock() { clock.forceFinish() }
+
+    readonly property bool plasticBinFull: AppState.recyclePlasticBinFull
+    readonly property bool canBinFull: AppState.recycleCanBinFull
+    readonly property string activeFullBin: AppState.recycleActiveFullBin
+
+    RecycleFlowController {
+        id: flowController
+        view: view
+        imageCapture: view.imageCapture
     }
 
-    function onPrediction(pred, predImage = '') {
-        console.log("ON PREDICTION", pred, Date.now())
-        if (pred == 'hand') {
-            view.handsInserted()
-            clock.reset()
-            clock.start()
-        } else if (pred == 'aluminum') {
-            Global.serial.sendCan()
-            AppState.incrementRecycleCans()
-            if (view.userType == Global.UserType.QrCode) {
-                Global.server.sendAluminumCan()
-            }
-            clock.reset()
-            clock.start()
-
-            if (predImage) {
-                view.showCapture(predImage)
-                // Switch back to camera after showing the image
-                cameraRestoreTimer.restart()
-            }
-        } else if (pred == 'plastic') {
-            Global.serial.sendPlastic()
-            AppState.incrementRecyclePlastic()
-            if (view.userType == Global.UserType.QrCode) {
-                Global.server.sendPlasticBottle()
-            }
-            clock.reset()
-            clock.start()
-            
-            if (predImage) {
-                view.showCapture(predImage)
-                cameraRestoreTimer.restart()  // Just call restart on the timer
-}
-        } else if (pred == 'other') {
-            Global.serial.sendOther()
-            view.otherInserted()
-            clock.reset()
-            clock.start()
-        }
-    }
-
-
-
-    Connections {
-        target: view.imageCapture
-
-        function onImageSaved(requestId, capturePath) {
-            //var pred = Global.server.getCapturePrediction(capturePath)
-            //view.onPrediction(pred[0], pred[1])
-            Global.server.getCapturePrediction(capturePath, view.phoneNumber)
-        }
-    }
-
-    Connections {
-        target: Global.serial
-
-        function onReady() {
-            clock.start()
-            view.showCamera()            
-        }
-
-        function onNewUserFailed() {
-            view.newUserFailed()
-        }
-    }
-
-    Connections {
-        target: Global.server
-
-        function onFinishedPhoneNumberRecycle(isPending: bool) {
-            isPending ? view.finishedWithPhoneNumberOffline() : view.finishedWithPhoneNumber()
-        }
-    }
-
-
-    Timer {
-                id: deferralTimer 
-                interval: 150
-                repeat: false
-                running: false
-
-
-                onTriggered: {
-                    running = false;
-                    view.onPrediction(deferralTimer.pred, deferralTimer.predImage);
-                    
-                    // Switch back to camera after a short delay
-                    // cameraRestoreTimer.start();
-                    
-                    if (deferralTimer.cleanupPath) {
-                        cleanupDelayTimer.start();
-                    }
-                }
-
-                property var pred: ""
-                property var predImage: ""
-                property var cleanupPath: ""
-            }
-
-    
-	// NEW: Release processing lock after crusher has time to act
-	Timer {
-	    id: processingReleaseTimer
-	    interval: 3000  // 3 seconds for crusher to complete
-	    repeat: false
-	    onTriggered: view.processingItem = false
-	}
-
-    Timer {
-                id: cleanupDelayTimer
-                interval: 2000  // 2s delay; adjust if needed (long enough for Image load)
-                repeat: false
-                onTriggered: {
-                    if (deferralTimer.cleanupPath) {
-                        Global.server.cleanupFile(deferralTimer.cleanupPath);
-                        deferralTimer.cleanupPath = "";
-                    }
-                }
-            }
-  
-    Connections {
-            target: Global.server
-
-            // <<< EDITED: Added systemPathToDelete to the function arguments >>>
-            function onPredictionReady(results, capturePath, systemPathToDelete) { 
-                
-                // The structure of 'results' is now [item, qml_uri] from Python server.py:
-                var item = results[0];        // e.g., "plastic", "aluminum", "other", "hand"
-                var imagePath = results[1];   // The 'file:///' URI
-
-                // 1. Display the image immediately
-                // view.showCapture(imagePath); 
-
-                // 2. Set timer variables
-                deferralTimer.pred = item; 
-                deferralTimer.predImage = imagePath;
-                deferralTimer.cleanupPath = systemPathToDelete; // <--- Store path for cleanup
-                deferralTimer.running = true;
-                // ----------------------------------
-            }
-        }
-
-    Component.onDestruction: {
-        Global.serial.sendSignOut()
-        AppState.endRecycleSession()
-    }
-    Component.onCompleted: {
-        AppState.startRecycleSession()
-        view.showCamera()
-    }
-
-    Timer {
-        interval: 2_000
-        running: true
-        onTriggered: Global.serial.sendNewUser()
-    }
-
-
-
-    MultilingualResource {
-        name: "background-recycle"
+    Item {
+        id: recycleFrame
         anchors.fill: parent
+        clip: true
+
+        Image {
+            id: recycleBackground
+            anchors.fill: parent
+            source: Global.getMultilingualImage(recycleFrame.frameImageName)
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            cache: false
+        }
 
         component ViewText : Text {
             required property string viewText
@@ -203,64 +65,100 @@ Item {
             font.pointSize: 48*Global.viewWidthScale
         }
 
-        Column {
+        readonly property bool bothBinsFull: view.plasticBinFull && view.canBinFull
+        readonly property bool onlyPlasticFull: view.plasticBinFull && !view.canBinFull
+        readonly property bool onlyCanFull: view.canBinFull && !view.plasticBinFull
+        readonly property string frameImageName: recycleFrame.bothBinsFull
+                                               ? "overlay-bin-full-both"
+                                               : (recycleFrame.onlyPlasticFull
+                                                  ? "overlay-bin-full-plastic"
+                                                  : (recycleFrame.onlyCanFull
+                                                     ? "overlay-bin-full-can"
+                                                     : "background-recycle"))
+
+        property bool devPanelOpen: false
+
+        Rectangle {
             visible: SystemInfo.dev
+            z: 20
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            Button {
-                text: "start"
-                onPressed: {
-                    clock.start()
-                    view.showCamera()
+            anchors.rightMargin: 16*Global.viewWidthScale
+            anchors.bottomMargin: 16*Global.viewHeightScale
+            width: 180*Global.viewWidthScale
+            height: 56*Global.viewHeightScale
+            radius: 10
+            color: "#203354"
+            border.color: "#5A78A3"
+
+            Text {
+                anchors.centerIn: parent
+                text: recycleFrame.devPanelOpen ? "Hide Dev Tools" : "Show Dev Tools"
+                color: "white"
+                font.pixelSize: 18*Global.viewWidthScale
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: recycleFrame.devPanelOpen = !recycleFrame.devPanelOpen
+            }
+        }
+
+        Rectangle {
+            visible: SystemInfo.dev && recycleFrame.devPanelOpen
+            z: 21
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.rightMargin: 16*Global.viewWidthScale
+            anchors.bottomMargin: (80 + 16)*Global.viewHeightScale
+            width: 260*Global.viewWidthScale
+            height: 420*Global.viewHeightScale
+            radius: 10
+            color: "#111A2BCC"
+            border.color: "#5A78A3"
+            clip: true
+
+            Flickable {
+                anchors.fill: parent
+                anchors.margins: 8
+                contentWidth: width
+                contentHeight: toolsColumn.implicitHeight
+                clip: true
+
+                Column {
+                    id: toolsColumn
+                    width: parent.width
+                    spacing: 6
+
+                    Button { text: "start"; width: parent.width; palette.buttonText: "black"; onPressed: flowController.startSessionUi() }
+                    Button { text: "end"; width: parent.width; palette.buttonText: "black"; onPressed: flowController.finishSessionUi() }
+
+                    Button {
+                        text: "ml: hand"
+                        width: parent.width
+                        palette.buttonText: "black"
+                        onPressed: flowController.simulateDevPrediction("hand")
+                    }
+                    Button {
+                        text: "ml: aluminum"
+                        width: parent.width
+                        palette.buttonText: "black"
+                        onPressed: flowController.simulateDevPrediction("aluminum")
+                    }
+                    Button {
+                        text: "ml: plastic"
+                        width: parent.width
+                        palette.buttonText: "black"
+                        onPressed: flowController.simulateDevPrediction("plastic")
+                    }
+                    Button {
+                        text: "ml: other"
+                        width: parent.width
+                        palette.buttonText: "black"
+                        onPressed: flowController.simulateDevPrediction("other")
+                    }
+
                 }
-            }
-            Button {
-                text: "end"
-                onPressed: clock.finish()
-            }
-            Button {
-                text: "hand"
-                onPressed: {
-                        // Generate a new capture path
-                        var p = SystemInfo.getNextCapturePath()
-                        // Take a snapshot from the camera
-                        view.imageCapture.captureToFile(p)
-                        // Update the UI counters and animations
-                        view.onPrediction(text)
-                        // Send the actual image path to the dev-mode uploader
-                        Global.server.sendDevPrediction(text, p)
-                    }
-
-            }
-            Button {
-                text: "aluminum"
-                onPressed: {
-                        var p = SystemInfo.getNextCapturePath()
-                        view.imageCapture.captureToFile(p)
-                        view.onPrediction(text)
-                        Global.server.sendDevPrediction(text, p)
-                    }
-
-            }
-            Button {
-                text: "plastic"
-                onPressed: {
-                        var p = SystemInfo.getNextCapturePath()
-                        view.imageCapture.captureToFile(p)
-                        view.onPrediction(text)
-                        Global.server.sendDevPrediction(text, p)
-                    }
-
-            }
-            Button {
-                text: "other"
-                onPressed: {
-                        var p = SystemInfo.getNextCapturePath()
-                        view.imageCapture.captureToFile(p)
-                        view.onPrediction(text)
-                        Global.server.sendDevPrediction(text, p)
-                    }
-
             }
         }
 
@@ -286,32 +184,14 @@ Item {
             resource: "button-end"
             x: 380*Global.viewWidthScale
             y: 535*Global.viewHeightScale
-            onPressed: clock.finish()
+            onPressed: flowController.finishSessionUi()
         }
 
         Clock {
             id: clock
-            interval: 3_000
-            onTriggered: {
-                console.log("CLOCK TRIGGER", Date.now())
-                var capturePath = SystemInfo.getNextCapturePath()
-                view.imageCapture.captureToFile(capturePath)
-            }
-            onFinished: {
-                if (AppState.recycleHasFinished) return
-                AppState.markRecycleFinished()
-
-                if (AppState.recyclePoints === 0) {
-                    view.finishedWithNoPoints()
-                } else if (view.userType === Global.UserType.QrCode) {
-                    view.finishedWithQrCode()
-                } else if (view.userType === Global.UserType.PhoneNumber) {
-                    Global.server.finishRecyclePhoneNumber(view.phoneNumber, AppState.recyclePlasticBottles, AppState.recycleCans)
-                }
-                if (view.userType === Global.UserType.QrCode) {
-                    Global.server.finishRecycleQrCode(view.phoneNumber, AppState.recyclePlasticBottles, AppState.recycleCans)
-                }
-            }
+            interval: 3000
+            onTriggered: view.captureRequested()
+            onFinished: view.sessionClockFinished()
         }
     }
 }

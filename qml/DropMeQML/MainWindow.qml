@@ -1,4 +1,4 @@
-pragma ComponentBehavior: Bound
+﻿pragma ComponentBehavior: Bound
 
 import QML
 import QtQuick
@@ -26,12 +26,34 @@ Window {
         Global.window = window
     }
 
+
+    Watchdog {
+        id: runtimeWatchdog
+        serial: Global.serial
+        appState: AppState
+        enabled: true
+        onWatchdogAlert: reason => console.log("[Watchdog] alert:", reason)
+        onWatchdogRecovered: reason => console.log("[Watchdog] recovered:", reason)
+    }
+
+    Timer {
+        id: uiHeartbeatTimer
+        interval: 1000
+        repeat: true
+        running: true
+        onTriggered: runtimeWatchdog.beatUi()
+    }
+
     // Forward hardware events -> EventBus (decoupling MainWindow from flow decisions)
     Connections {
         target: Global.serial
-        function onHandInGate() { EventBus.hwHandInGate() }
-        function onBinFull(binName) { EventBus.hwBinFull(binName) }
-        function onErrorOccurred(errorName, errorId) { EventBus.hwError(errorName, errorId) }
+        function onConnectionEstablished(portName) { runtimeWatchdog.beatBackend() }
+        function onCommandSent(cmdName, payload) { runtimeWatchdog.beatBackend() }
+        function onHandInGate() { runtimeWatchdog.beatBackend(); EventBus.hwHandInGate() }
+        function onGateOpened() { runtimeWatchdog.beatBackend(); EventBus.hwGateCleared() }
+        function onGateClosed() { runtimeWatchdog.beatBackend(); EventBus.hwGateCleared() }
+        function onBinFull(binName) { runtimeWatchdog.beatBackend(); EventBus.hwBinFull(binName) }
+        function onErrorOccurred(errorName, errorId) { runtimeWatchdog.beatBackend(); EventBus.hwError(errorName, errorId) }
     }
 
     enum BottomViewItem {
@@ -50,19 +72,24 @@ Window {
             width: parent.width
             height: 0.3*parent.height
             visible: videos.playing
+            fillMode: VideoOutput.PreserveAspectCrop
         }
 
         Image {
             source: SystemInfo.getImagePath("no-signal")
+            asynchronous: true
+            cache: true
             visible: !videos.playing
             width: parent.width
             height: 0.3*parent.height
+            fillMode: Image.PreserveAspectCrop
         }
 
         Item {
             id: viewContainer
             width: Global.viewWidth
             height: Global.viewHeight
+            clip: true
 
             StateManager {
                 id: stateManager
@@ -117,6 +144,7 @@ Window {
 
             VideoOutput {
                 id: cameraVideoOutput
+                fillMode: VideoOutput.PreserveAspectCrop
             }
 
             Image {
@@ -141,3 +169,4 @@ Window {
         videoOutput: videoOutput
     }
 }
+

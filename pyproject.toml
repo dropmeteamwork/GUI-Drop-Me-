@@ -50,4 +50,5 @@ dev = [
     "requests>=2.32.3",
     "schedule>=1.2.2",
     "semver>=3.0.4",
+    "pytest>=8.0.0",
 ]

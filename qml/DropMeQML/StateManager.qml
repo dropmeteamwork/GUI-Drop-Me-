@@ -1,11 +1,11 @@
-import QML
+﻿import QML
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtMultimedia
 import DropMe
 
-import "."   // ✅ ensures EnterCredentialsView, StartView, etc are visible
+import "."
 
 Item {
     id: sm
@@ -15,86 +15,94 @@ Item {
     required property Item bottomView
     required property CaptureSession captureSession
 
-    // ✅ Centralized UI-flow flags belong here (not implicit globals)
     property bool transitionedFromStart: false
-    // Popup payload kept in QML to avoid lossy Python QVariantMap round-trip
     property var _pendingPopupPayload: ({})
     property var _pendingRoutePayload: ({})
+
+    property var routeComponents: ({})
+    property var popupComponents: ({})
+    property string _lastAppliedRoute: ""    UiCoordinator {
+        id: uiCoordinator
+        appState: AppState
+        serial: Global.serial
+    }
+
+    function _initComponentMaps() {
+        routeComponents = {
+            "start": startView,
+            "select_language": selectLanguageView,
+            "maintenance": maintenanceView,
+            "enter_credentials": enterCredentialsView,
+            "recycle_qr": recycleView,
+            "recycle_phone": recycleView
+        }
+
+        popupComponents = {
+            "hands": popupHandsView,
+            "hands_and_close": popupHandsAndCloseView,
+            "non_recyclable": popupNonRecyclableView,
+            "timeout": popupTimeoutView,
+            "invalid_phone": invalidPhoneNumberView,
+            "finished_qr": popupFinishedQrCodeRecycleView,
+            "finished_phone": popupFinishedPhoneNumberRecycleView,
+            "out_of_service": popupOutOfServiceView
+        }
+    }
 
     function goToStart() {
         view.clear()
         view.push(startView)
-        AppState.shouldSignOut = false
-        sm.transitionedFromStart = false
+        transitionedFromStart = false
     }
 
-    function goToStartOrDefer() {
-        if (AppState.handInGate) {
-            AppState.shouldSignOut = true
-            return
+    function _routeProps(target, payload) {
+        var p = payload || {}
+        var out = {}
+
+        if (target === "recycle_qr") {
+            out.userType = Global.UserType.QrCode
+            out.imageCapture = sm.captureSession.imageCapture
+        } else if (target === "recycle_phone") {
+            out.userType = Global.UserType.PhoneNumber
+            out.phoneNumber = p.phoneNumber || ""
+            out.imageCapture = sm.captureSession.imageCapture
         }
-        goToStart()
+
+        return out
     }
 
     function _executeRoute(route, payload) {
-        // Called only by onCurrentRouteChanged. "back" is handled
-        // directly in EventBus.onNavigate and never reaches here.
-        payload = payload || {}
-
-        switch (route) {
-        case "start":
-            goToStart()
-            return
-
-        case "select_language":
-            view.push(selectLanguageView)
-            return
-
-        case "maintenance":
-            if (payload.language !== undefined)
-                AppState.language = payload.language
-            view.push(maintenanceView)
-            return
-
-        case "enter_credentials":
-            view.background.name = "background-with-logo"
-            sm.transitionedFromStart = false
-            view.push(enterCredentialsView)
-            return
-
-        case "recycle_qr":
-            view.push(recycleView, {
-                          "userType": Global.UserType.QrCode,
-                          "imageCapture": sm.captureSession.imageCapture
-                      })
-            return
-
-        case "recycle_phone":
-            view.push(recycleView, {
-                          "userType": Global.UserType.PhoneNumber,
-                          "phoneNumber": payload.phoneNumber,
-                          "imageCapture": sm.captureSession.imageCapture
-                      })
-            return
-
-        default:
+        var action = uiCoordinator.routeAction(route, payload)
+        if (!action || action.op === "none") {
             console.log("[StateManager] Unknown route:", route)
             return
         }
-    }
 
-    function popupComponentFor(name) {
-        switch (name) {
-        case "hands": return popupHandsView
-        case "hands_and_close": return popupHandsAndCloseView
-        case "non_recyclable": return popupNonRecyclableView
-        case "timeout": return popupTimeoutView
-        case "invalid_phone": return invalidPhoneNumberView
-        case "finished_qr": return popupFinishedQrCodeRecycleView
-        case "finished_phone": return popupFinishedPhoneNumberRecycleView
-        case "out_of_service": return popupOutOfServiceView
-        default: return null
+        if (action.background !== undefined && action.background !== null && action.background !== "")
+            view.background.name = action.background
+
+        var target = action.target || ""
+        var comp = routeComponents[target]
+        if (!comp) {
+            console.log("[StateManager] Missing route component for:", target)
+            return
         }
+
+        var props = _routeProps(target, action.props || {})
+
+        if (action.op === "reset") {
+            view.clear()
+            view.push(comp, props)
+            transitionedFromStart = false
+            return
+        }
+
+        if (action.op === "push") {
+            view.push(comp, props)
+            return
+        }
+
+        console.log("[StateManager] Unknown route action:", action.op)
     }
 
     StackView {
@@ -103,11 +111,8 @@ Item {
         initialItem: startView
         background: Resource { name: "background" }
         onEmptyChanged: background.name = "background"
-
-        // ✅ match old repo: when popup is shown, underlying screen is NOT visible/clickable
         enabled: AppState.activePopup === ""
 
-        // instant swap
         pushEnter: null
         pushExit: null
         popEnter: null
@@ -116,45 +121,24 @@ Item {
         replaceExit: null
     }
 
-
     Connections {
         target: EventBus
 
         function onNavigate(route, payload) {
-            // "back" is a UI-gesture pop — does not update AppState.currentRoute
-            if (route === "back") {
-                view.pop()
-                return
-            }
-            // Cache payload in QML before the Python round-trip (same pattern as popup payload).
-            // AppState.navigateTo() sets currentRoute → fires onCurrentRouteChanged below.
             sm._pendingRoutePayload = payload || {}
-            AppState.navigateTo(route, payload)
+            uiCoordinator.handleNavigate(route, payload)
         }
 
         function onShowPopup(popupName, payload) {
-            // Cache payload in QML BEFORE handing off to Python.
-            // Python's Property(object) → QVariantMap round-trip can drop keys,
-            // causing createObject to fail with "required property not initialized".
             sm._pendingPopupPayload = payload || {}
-            AppState.showPopup(popupName, payload)
-        }
-        function onResetToStart() { sm.goToStart() }
-
-        function onHwHandInGate() {
-            if (AppState.handInGate) return
-            AppState.handInGate = true
-            AppState.showPopup("hands_and_close", {})
+            uiCoordinator.handleShowPopup(popupName, payload)
         }
 
-        function onHwBinFull(binName) {
-            AppState.showPopup("out_of_service", {})
-        }
-
-        function onHwError(errorName, errorId) {
-            console.log("MCU Error:", errorName, errorId)
-            AppState.showPopup("out_of_service", {})
-        }
+        function onResetToStart() { uiCoordinator.handleResetToStart() }
+        function onHwHandInGate() { uiCoordinator.handleHwHandInGate() }
+        function onHwGateCleared() { uiCoordinator.handleHwGateCleared() }
+        function onHwBinFull(binName) { uiCoordinator.handleHwBinFull(binName) }
+        function onHwError(errorName, errorId) { uiCoordinator.handleHwError(errorName, errorId) }
     }
 
     Component {
@@ -170,7 +154,7 @@ Item {
         anchors.fill: parent
         z: 9000
         visible: AppState.activePopup !== ""
-        name: view.background.name  // or "background-with-logo" depending on which area you mean
+        name: view.background.name
     }
 
     Item {
@@ -178,55 +162,50 @@ Item {
         anchors.fill: parent
         z: 9999
         visible: AppState.activePopup !== ""
-
-        // the actual popup object instance (created/destroyed centrally)
         property var popupItem: null
     }
 
     property bool _popupRenderScheduled: false
     function _renderPopup() {
-        const name = AppState.activePopup
+        const activeName = AppState.activePopup
+        const key = uiCoordinator.popupKey(activeName)
 
-        // 1) Clear current popup instance
         if (popupLayer.popupItem) {
             popupLayer.popupItem.destroy()
             popupLayer.popupItem = null
         }
 
-        // 2) No popup requested
-        if (!name) {
+        if (!key) {
             popupLayer.visible = false
             return
         }
 
-        // 3) Resolve popup component
-        const comp = popupComponentFor(name)
+        const comp = popupComponents[key]
         if (!comp) {
-            console.log("[StateManager] Unknown popup:", name)
+            console.log("[StateManager] Missing popup component for:", key)
             popupLayer.visible = false
             return
         }
 
-        // 4) Use the QML-cached payload (avoids lossy Python → QVariantMap → JS round-trip).
-        //    Falls back to AppState.popupPayload for popups triggered outside EventBus.
         var payload = sm._pendingPopupPayload
-        if (!payload || typeof payload !== "object") {
+        if (!payload || typeof payload !== "object")
             payload = AppState.popupPayload || {}
-        }
-        // ✅ prevent stale payload reuse
         sm._pendingPopupPayload = ({})
 
-
-        // 5) Create popup with construction props (fixes required properties)
         const obj = comp.createObject(popupLayer, payload)
         if (!obj) {
-            console.log("[StateManager] Failed to create popup:", name)
+            console.log("[StateManager] Failed to create popup:", key)
             popupLayer.visible = false
             return
         }
 
         popupLayer.popupItem = obj
         popupLayer.visible = true
+    }
+
+    Connections {
+        target: uiCoordinator
+        function onBackRequested() { view.pop() }
     }
 
     Connections {
@@ -244,26 +223,36 @@ Item {
         function onActivePopupChanged() { _schedule() }
         function onPopupPayloadChanged() { _schedule() }
 
-        // Route-driven navigation: AppState is source of truth, StateManager is the renderer.
-        // Satisfies PDF Phase 2 — "Decouple View Logic".
         function onCurrentRouteChanged() {
+            console.log("[StateManager] routeChanged ->", AppState.currentRoute)
             var payload = sm._pendingRoutePayload
-            if (!payload || typeof payload !== "object") {
+            if (!payload || typeof payload !== "object")
                 payload = AppState.routePayload || {}
+            sm._pendingRoutePayload = ({})
+
+            var route = AppState.currentRoute
+            var isRecycle = (route === "recycle_qr" || route === "recycle_phone")
+            if (isRecycle && route === sm._lastAppliedRoute) {
+                console.log("[StateManager] duplicate recycle route ignored:", route)
+                return
             }
-            sm._pendingRoutePayload = ({})   // consume — prevent stale reuse
-            sm._executeRoute(AppState.currentRoute, payload)
+
+            sm._executeRoute(route, payload)
+            sm._lastAppliedRoute = route
+            if (isRecycle) {
+                sm.bottomView.currentIndex = MainWindow.BottomViewItem.CameraVideoOutput
+                console.log("[StateManager] bottom -> Camera by route", route)
+            } else {
+                sm.bottomView.currentIndex = MainWindow.BottomViewItem.Slides
+                console.log("[StateManager] bottom -> Slides by route", route)
+            }
         }
     }
-    
 
     Component {
         id: selectLanguageView
         SelectLanguageView {
-            onSelectLanguage: language => {
-                AppState.language = language
-                EventBus.navigate("enter_credentials", {})
-            }
+            onSelectLanguage: language => EventBus.navigate("enter_credentials", {"language": language})
         }
     }
 
@@ -302,10 +291,7 @@ Item {
     Component {
         id: recycleView
         RecycleView {
-            onNewUserFailed: {
-                if (!SystemInfo.dev)
-                    EventBus.showPopup("out_of_service", {})
-            }
+            onNewUserFailed: uiCoordinator.handleNewUserFailed(SystemInfo.dev)
 
             onHandsInserted: EventBus.showPopup("hands", {})
             onOtherInserted: EventBus.showPopup("non_recyclable", {})
@@ -314,39 +300,43 @@ Item {
             onFinishedWithPhoneNumber: EventBus.showPopup("finished_phone", {"points": AppState.recyclePoints, "isPending": false})
             onFinishedWithPhoneNumberOffline: EventBus.showPopup("finished_phone", {"points": AppState.recyclePoints, "isPending": true})
 
-            onShowCamera: sm.bottomView.currentIndex = MainWindow.BottomViewItem.CameraVideoOutput
+            onShowCamera: {
+                sm.bottomView.currentIndex = MainWindow.BottomViewItem.CameraVideoOutput
+                console.log("[StateManager] bottom -> Camera by RecycleView.showCamera")
+            }
             onShowCapture: imagePath => {
                 sm.captureImage.source = imagePath
                 sm.bottomView.currentIndex = MainWindow.BottomViewItem.CaptureImage
+                console.log("[StateManager] bottom -> Capture by RecycleView.showCapture")
             }
-
             Component.onCompleted: {
+                console.log("[StateManager] RecycleView component completed")
                 sm.captureSession.camera.start()
-                sm.bottomView.currentIndex = MainWindow.BottomViewItem.CameraVideoOutput
             }
 
             Component.onDestruction: {
+                console.log("[StateManager] RecycleView component destroyed")
                 sm.captureSession.camera.stop()
-                sm.bottomView.currentIndex = MainWindow.BottomViewItem.Slides
             }
         }
     }
 
     Component {
         id: popupHandsView
-        PopupHandsView { interval: 2000; onFinished: AppState.clearPopup() }
+        PopupHandsView {
+            interval: 2000
+            autoClose: true
+            onFinished: {
+                if (!AppState.handInGate)
+                    AppState.clearPopup()
+            }
+        }
     }
 
     Component {
         id: popupHandsAndCloseView
         PopupHandsView {
-            interval: 5000
-            onFinished: {
-                AppState.handInGate = false
-                Global.serial.closeDoor()
-                AppState.clearPopup()
-                if (AppState.shouldSignOut) sm.goToStart()
-            }
+            autoClose: false
         }
     }
 
@@ -360,37 +350,37 @@ Item {
         PopupFinishedQrCodeRecycleView {
             onFinished: {
                 AppState.clearPopup()
-                sm.goToStartOrDefer()
+                uiCoordinator.requestReturnToStart()
             }
         }
     }
 
     Component {
         id: popupFinishedPhoneNumberRecycleView
-        PopupFinishedPhoneNumberRecycleView { 
+        PopupFinishedPhoneNumberRecycleView {
             onFinished: {
                 AppState.clearPopup()
-                sm.goToStartOrDefer() 
+                uiCoordinator.requestReturnToStart()
             }
         }
     }
 
     Component {
         id: popupTimeoutView
-        PopupTimeoutView { 
+        PopupTimeoutView {
             onFinished: {
                 AppState.clearPopup()
-                sm.goToStartOrDefer() 
+                uiCoordinator.requestReturnToStart()
             }
         }
     }
 
     Component {
         id: popupOutOfServiceView
-        PopupOutOfServiceView { 
+        PopupOutOfServiceView {
             onFinished: {
                 AppState.clearPopup()
-                sm.goToStartOrDefer() 
+                uiCoordinator.requestReturnToStart()
             }
         }
     }
@@ -400,4 +390,17 @@ Item {
         PopupInvalidPhoneNumberView { onFinished: AppState.clearPopup() }
     }
 
+    Component.onCompleted: {
+        _initComponentMaps()
+    }
 }
+
+
+
+
+
+
+
+
+
+
