@@ -9,8 +9,11 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
   "boto3>=1.40.55",
-  "gitpython>=3.1.44",
+  "numpy>=2.2.0",
+  "opencv-python>=4.10.0.84",
+  "pillow>=11.0.0",
   "pyside6>=6.8.2.1",
+  "scipy>=1.15.0",
   "torch>=2.6.0",
   "torchvision>=0.21.0",
   "ultralytics>=8.3.73",
