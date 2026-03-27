@@ -42,34 +42,47 @@ from PySide6.QtQml import QmlElement, qmlEngine
 from gui import PENDING_RECYCLES_FILENAME
 from gui import logging
 from gui.filequeue import FileQueue
+from gui.runtime_paths import state_root
 
 QML_IMPORT_NAME = "DropMe"
 QML_IMPORT_MAJOR_VERSION = 1
 QML_IMPORT_MINOR_VERSION = 0
 
-# ==================== API CONSTANTS (UNCHANGED) ====================
+# ==================== API CONSTANTS ====================
 
-SERVER_BASE_URL = "https://dropme.up.railway.app"
-MACHINE_NAME = "maadi_club"
-MACHINE_API_KEY = b"ojs7JhND.0UEhbrBfyMFstQBjjCG8I3o2fCPTUxb7"
+SERVER_BASE_URL = os.getenv("DROPME_SERVER_BASE_URL", "https://dropme.up.railway.app").rstrip("/")
+MACHINE_NAME = os.getenv("MACHINE_NAME", "RVM-001")
+MACHINE_API_KEY = os.getenv("MACHINE_API_KEY", "").encode("utf-8")
 AUTHORIZATION_HEADER = b"Authorization"
-AUTHORIZATION_HEADER_VALUE = b"Api-Key " + MACHINE_API_KEY
+AUTHORIZATION_HEADER_VALUE = b"Api-Key " + MACHINE_API_KEY if MACHINE_API_KEY else b""
 
-SEND_ITEM_REQUEST = QNetworkRequest(QUrl(f"{SERVER_BASE_URL}/machines/recycle/update/V2/{MACHINE_NAME}/"))
-SEND_ITEM_REQUEST.setRawHeader(AUTHORIZATION_HEADER, AUTHORIZATION_HEADER_VALUE)
-SEND_ITEM_REQUEST.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
+
+def _apply_auth_headers(req: QNetworkRequest) -> None:
+    if AUTHORIZATION_HEADER_VALUE:
+        req.setRawHeader(AUTHORIZATION_HEADER, AUTHORIZATION_HEADER_VALUE)
+
+
+def _make_json_request(url: str) -> QNetworkRequest:
+    req = QNetworkRequest(QUrl(url))
+    _apply_auth_headers(req)
+    req.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
+    return req
+
+
+def _make_request(url: str) -> QNetworkRequest:
+    req = QNetworkRequest(QUrl(url))
+    _apply_auth_headers(req)
+    return req
+
+SEND_ITEM_REQUEST = _make_json_request(f"{SERVER_BASE_URL}/machines/recycle/update/V2/{MACHINE_NAME}/")
 SEND_ITEM_PLASTIC_BOTTLE = b'{"bottles": 1, "cans": 0}'
 SEND_ITEM_ALUMINUM_CAN = b'{"bottles": 0, "cans": 1}'
 
-GET_QRCODE_REQUEST = QNetworkRequest(QUrl(f"{SERVER_BASE_URL}/machines/qrcode/{MACHINE_NAME}/"))
-GET_QRCODE_REQUEST.setRawHeader(AUTHORIZATION_HEADER, AUTHORIZATION_HEADER_VALUE)
+GET_QRCODE_REQUEST = _make_request(f"{SERVER_BASE_URL}/machines/qrcode/{MACHINE_NAME}/")
 
-CHECK_QRCODE_SCANNED_REQUEST = QNetworkRequest(QUrl(f"{SERVER_BASE_URL}/machines/recycle/check/{MACHINE_NAME}/"))
-CHECK_QRCODE_SCANNED_REQUEST.setRawHeader(AUTHORIZATION_HEADER, AUTHORIZATION_HEADER_VALUE)
+CHECK_QRCODE_SCANNED_REQUEST = _make_request(f"{SERVER_BASE_URL}/machines/recycle/check/{MACHINE_NAME}/")
 
-FINISH_RECYCLE_QRCODE_REQUEST = QNetworkRequest(QUrl(f"{SERVER_BASE_URL}/machines/recycle/finish/{MACHINE_NAME}/"))
-FINISH_RECYCLE_QRCODE_REQUEST.setRawHeader(AUTHORIZATION_HEADER, AUTHORIZATION_HEADER_VALUE)
-FINISH_RECYCLE_QRCODE_REQUEST.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
+FINISH_RECYCLE_QRCODE_REQUEST = _make_json_request(f"{SERVER_BASE_URL}/machines/recycle/finish/{MACHINE_NAME}/")
 FINISH_RECYCLE_QRCODE_DATA = b'""'
 
 # Keep end-of-session UX responsive when network is slow/unreachable.
@@ -124,6 +137,8 @@ class Server(QObject):
         super().__init__()
 
         self.logger = logging.getLogger("dropme.server")
+        if not MACHINE_API_KEY:
+            self.logger.warning("MACHINE_API_KEY is empty; API requests may be unauthorized")
 
         # Runtime data directory (Qt-managed, cross-platform)
         self.data_dir = QDir(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation))
@@ -289,13 +304,12 @@ class Server(QObject):
     def updateGUI(self) -> None:
         """
         Keeps the original behavior:
-        - Uses XDG_STATE_HOME (Linux style) fallback to ~/.local/state
+        - Uses cross-platform runtime state root (env override supported)
         - Runs uv to update GUI in that folder
 
         Adds safety: handles Windows environments gracefully (still attempts, but logs if missing).
         """
-        base = os.getenv("XDG_STATE_HOME", "~/.local/state")
-        current_gui_dir = Path(base).expanduser().joinpath("dropme/gui")
+        current_gui_dir = state_root() / "gui"
 
         if not current_gui_dir.exists():
             self.logger.warning(f"updateGUI: directory not found: {current_gui_dir}")
@@ -325,9 +339,7 @@ class Server(QObject):
 
     @Slot(str, int, int)
     def finishRecyclePhoneNumber(self, phone_number: str, bottles: int, cans: int) -> None:
-        req = QNetworkRequest(QUrl(f"{SERVER_BASE_URL}/machines/recycle/add/{MACHINE_NAME}/{phone_number}/"))
-        req.setRawHeader(AUTHORIZATION_HEADER, AUTHORIZATION_HEADER_VALUE)
-        req.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
+        req = _make_json_request(f"{SERVER_BASE_URL}/machines/recycle/add/{MACHINE_NAME}/{phone_number}/")
         try:
             req.setTransferTimeout(PHONE_FINISH_REQUEST_TIMEOUT_MS)
         except Exception:
@@ -550,9 +562,7 @@ class Server(QObject):
 
         next_in_queue = Recycle.from_json(next_buffer)
         self.logger.info(f"Draining pending queue item for {next_in_queue.phoneNumber}")
-        req = QNetworkRequest(QUrl(f"{SERVER_BASE_URL}/machines/recycle/add/{MACHINE_NAME}/{next_in_queue.phoneNumber}/"))
-        req.setRawHeader(AUTHORIZATION_HEADER, AUTHORIZATION_HEADER_VALUE)
-        req.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
+        req = _make_json_request(f"{SERVER_BASE_URL}/machines/recycle/add/{MACHINE_NAME}/{next_in_queue.phoneNumber}/")
         try:
             req.setTransferTimeout(PHONE_FINISH_REQUEST_TIMEOUT_MS)
         except Exception:

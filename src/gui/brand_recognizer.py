@@ -19,6 +19,7 @@ import time
 from pathlib import Path
 from typing import Optional, Tuple, Dict
 from io import BytesIO
+from gui.runtime_paths import brand_cache_dir
 
 import cv2
 import numpy as np
@@ -41,7 +42,7 @@ class BrandRecognizer:
         self.results_prefix = "brands_results/"  # S3 output folder
 
         # Local cache
-        self.cache_dir = Path.home() / ".local/share/dropme/gui/brand_cache"
+        self.cache_dir = brand_cache_dir()
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         # Recognition settings

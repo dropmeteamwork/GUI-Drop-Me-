@@ -34,3 +34,5 @@ models/
 *.onnx
 *.pth
 *.pt
+backups/
+scripts/fleet/secrets.local.ps1

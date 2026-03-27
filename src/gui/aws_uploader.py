@@ -9,10 +9,11 @@ import tempfile
 import threading
 import time
 from typing import Optional, Tuple
+from gui.runtime_paths import captures_dir, metadata_dir, upload_queue_dir
 
 AWS_DEBUG_LOG = Path(tempfile.gettempdir()) / "aws_debug.log"
-SERIAL_BUCKET_PROD = "ai-data-001"
-SERIAL_BUCKET_DEV = "testing-only-001"
+SERIAL_BUCKET_PROD = os.getenv("SERIAL_BUCKET_PROD", "ai-data-001")
+SERIAL_BUCKET_DEV = os.getenv("SERIAL_BUCKET_DEV", "testing-only-001")
 
 def _load_test_config():
     """
@@ -44,7 +45,7 @@ class AWSUploader:
         # aws_key = os.getenv('AWS_ACCESS_KEY_ID', '')
         # aws_secret = os.getenv('AWS_SECRET_ACCESS_KEY', '')
         # aws_region = os.getenv('AWS_REGION', 'eu-central-1')
-        # self.machine_name = os.getenv('MACHINE_NAME', 'maadi_club')
+        # self.machine_name = os.getenv('MACHINE_NAME', 'RVM-001')
 
     def __new__(cls, *args, **kwargs):
         with cls._instance_lock:
@@ -64,19 +65,19 @@ class AWSUploader:
             aws_key     = cfg.get('AWS_ACCESS_KEY_ID', '')
             aws_secret  = cfg.get('AWS_SECRET_ACCESS_KEY', '')
             aws_region  = cfg.get('AWS_REGION', 'eu-central-1')
-            self.machine_name = cfg.get('MACHINE_NAME', 'maadi_club')
+            self.machine_name = cfg.get('MACHINE_NAME', 'RVM-001')
         else:
             # Default production behaviour
             self.bucket_name = os.getenv('AWS_BUCKET_NAME', 'ai-data-001')
             aws_key     = os.getenv('AWS_ACCESS_KEY_ID', '')
             aws_secret  = os.getenv('AWS_SECRET_ACCESS_KEY', '')
             aws_region  = os.getenv('AWS_REGION', 'eu-central-1')
-            self.machine_name = os.getenv('MACHINE_NAME', 'maadi_club')
+            self.machine_name = os.getenv('MACHINE_NAME', 'RVM-001')
 
         #for offline sync
-        self.captures_dir = Path.home() / ".local/share/dropme/gui/captures"
-        self.metadata_dir = Path.home() / ".local/share/dropme/gui/metadata"
-        self.queue_dir = Path.home() / ".local/share/dropme/gui/upload_queue"
+        self.captures_dir = captures_dir()
+        self.metadata_dir = metadata_dir()
+        self.queue_dir = upload_queue_dir()
 
         # Create directories
         self.captures_dir.mkdir(parents=True, exist_ok=True)

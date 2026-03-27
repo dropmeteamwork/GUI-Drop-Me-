@@ -76,50 +76,42 @@ def check_required_packages() -> List[Tuple[str, bool, str]]:
     return results
 
 def check_paths_config(file_path: Path) -> List[Tuple[str, bool, str]]:
-    """Check if production paths are correctly configured"""
+    """Check if production paths are cross-platform and env-driven."""
     issues = []
 
-    # Define your ACTUAL expected production paths
-    EXPECTED_MODEL_PATH_STRING = "~/.local/state/dropme/gui-v1.1.3/src/gui/new_models"
-    EXPECTED_LOG_PATH_STRING = "~/.local/state/dropme/gui-v1.1.3/src/gui/new_models/log"
-    
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        
-        # Check for laptop paths
-        if 'D:\\' in content or 'D:/' in content:
-            issues.append(("Windows path found", False, "Found D:\\ path - should use /home/user/ for production"))
-        
-        # Check IS_PRODUCTION flag
-        if 'IS_PRODUCTION = False' in content:
-            issues.append(("IS_PRODUCTION flag", False, "IS_PRODUCTION is set to False"))
-        else:
-            issues.append(("IS_PRODUCTION flag", True, "Correctly configured"))
-    
 
-        # Check for production paths
-        if EXPECTED_MODEL_PATH_STRING in content:
-            issues.append(("Production model path", True, f"Found {EXPECTED_MODEL_PATH_STRING}"))
+        if '~/.local/' in content or '/home/' in content:
+            issues.append(("Hardcoded runtime paths", False, "Found hardcoded home path; use gui.runtime_paths"))
         else:
-            # You might want to keep the error message generic or list both options
-            issues.append(("Production model path", False, "Production path not found (expected custom path)")) 
+            issues.append(("Hardcoded runtime paths", True, "No hardcoded home path strings found"))
 
-        if EXPECTED_LOG_PATH_STRING in content:
-            issues.append(("Production log path", True, f"Found {EXPECTED_LOG_PATH_STRING}"))
+        if 'from gui.runtime_paths import' in content:
+            issues.append(("runtime_paths import", True, "Shared runtime path helper imported"))
         else:
-            issues.append(("Production log path", False, "Production log path not found (expected custom path)"))
-    
-        
+            issues.append(("runtime_paths import", False, "Missing gui.runtime_paths import"))
+
+        if 'BASE_MODEL_PATH = models_dir()' in content:
+            issues.append(("Model path binding", True, "BASE_MODEL_PATH is env-driven via models_dir()"))
+        else:
+            issues.append(("Model path binding", False, "BASE_MODEL_PATH is not bound to models_dir()"))
+
+        if 'LOG_PATH = model_logs_dir()' in content:
+            issues.append(("Log path binding", True, "LOG_PATH is env-driven via model_logs_dir()"))
+        else:
+            issues.append(("Log path binding", False, "LOG_PATH is not bound to model_logs_dir()"))
+
         # Check for test functions
         if 'def test_model_locally' in content:
             issues.append(("Test functions", False, "Test function still present - should be removed"))
         else:
             issues.append(("Test functions", True, "Test functions removed"))
-        
+
     except Exception as e:
         issues.append(("File reading", False, f"Error: {str(e)}"))
-    
+
     return issues
 
 def check_mlmodel_init(file_path: Path) -> Tuple[bool, str]:
@@ -234,11 +226,10 @@ def validate_mlmodel_file(file_path: Path):
         print_success("ALL CHECKS PASSED! ✓")
         print(f"\n{GREEN}The file is ready for production deployment.{RESET}")
         print(f"\n{BLUE}Next steps:{RESET}")
-        print("  1. Copy mlmodel.py to production machine: /home/user/")
-        print("  2. Ensure model files are in: /home/user/models/")
-        print("  3. Create log directory: sudo mkdir -p /var/log/rvm")
-        print("  4. Set permissions: sudo chown -R user:user /var/log/rvm")
-        print("  5. Update server.py to use: self.mlmodel = MLModel()")
+        print("  1. Set machine env vars (MACHINE_NAME, MACHINE_API_KEY, AWS_*)")
+        print("  2. Place model files in DROPME_MODELS_DIR (or default runtime state path)")
+        print("  3. Start GUI in operating mode (without --dev)")
+        print("  4. Verify runtime logs/state directories are created automatically")
         return True
     else:
         print_error("VALIDATION FAILED! ✗")

@@ -74,11 +74,14 @@ python -m gui.main --dev
 
 - **TX**: After each button click you see a line like `[time] TX: GATE_OPEN PL:0`.
 - **RX**: When the simulator (or real MCU) replies, you see e.g. `[time] RX: GATE_OPENED`.
-- **MCU-initiated** (sensor/error): Use simulator keys in the **simulator** window:
-  - **h** → GATE_BLOCKED → log shows `RX: GATE_BLOCKED` and hand-in-gate popup.
-  - **w** → WEIGHT_DATA → log shows `RX: WEIGHT_DATA Xg`.
-  - **p** / **c** / **r** → BIN_*_FULL → log shows `RX: BIN_FULL Plastic/Can/Reject` and bin-full popup.
-  - **i** → simulated ML (weight + optional bin full).
+- **MCU-initiated** (sensor/error/status): Use simulator keys in the **simulator** window:
+  - **1 / 2 / 3** -> `SYS_READY` / `SYS_BUSY` / `SYS_IDLE`.
+  - **4 / 5 / h** -> `GATE_OPENED` / `GATE_CLOSED` / `GATE_BLOCKED`.
+  - **6 / 7 / 8 / 9 / 0** -> `CONVEYOR_DONE` / `SORT_DONE(plastic)` / `SORT_DONE(can)` / `REJECT_DONE` / `REJECT_HOME_OK`.
+  - **w** -> `WEIGHT_DATA` -> log shows `RX: WEIGHT_DATA Xg`.
+  - **p / c / r** -> `BIN_*_FULL` -> log shows `RX: BIN_FULL Plastic/Can/Reject` and bin-full popup.
+  - **t / e / f / b** -> `ERR_GATE_TIMEOUT` / `ERR_MOTOR_STALL` / `ERR_SENSOR_FAIL` / `ERR_BIN_FULL`.
+
 
 ---
 

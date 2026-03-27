@@ -128,7 +128,7 @@ class AutoSerial(QObject):
         self._telemetry = ProtocolTelemetryService(
             logger=self.logger,
             log_dir=telemetry_dir,
-            machine_name=os.environ.get("MACHINE_NAME", "maadi_club"),
+            machine_name=os.environ.get("MACHINE_NAME", "RVM-001"),
             telemetry_uploader=AWSUploader(),
         )
 

@@ -37,13 +37,15 @@ python -m gui.main --dev
 
 From simulator terminal:
 
-- `h` -> `GATE_BLOCKED` (hand in gate)
+- `1` / `2` / `3` -> `SYS_READY` / `SYS_BUSY` / `SYS_IDLE`
+- `4` / `5` / `h` -> `GATE_OPENED` / `GATE_CLOSED` / `GATE_BLOCKED`
+- `6` / `7` / `8` / `9` / `0` -> `CONVEYOR_DONE` / `SORT_DONE(plastic)` / `SORT_DONE(can)` / `REJECT_DONE` / `REJECT_HOME_OK`
 - `u` -> gate clear (`GATE_OPENED` or `GATE_CLOSED`) for popup clear path
 - `w` -> `WEIGHT_DATA`
 - `p` -> `BIN_PLASTIC_FULL`
 - `c` -> `BIN_CAN_FULL`
 - `r` -> `BIN_REJECT_FULL`
-- `e` -> `ERR_MOTOR_STALL`
+- `t` / `e` / `f` / `b` -> `ERR_GATE_TIMEOUT` / `ERR_MOTOR_STALL` / `ERR_SENSOR_FAIL` / `ERR_BIN_FULL`
 - `s` -> print simulator state
 
 From GUI dev panel (RecycleView):

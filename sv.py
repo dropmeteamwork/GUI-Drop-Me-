@@ -13,6 +13,7 @@
 import sys
 import requests
 import os
+import platform
 import socket
 import logging
 import logging.handlers
@@ -35,20 +36,47 @@ from pathlib import Path
 from lockfile.pidlockfile import PIDLockFile, AlreadyLocked
 from urllib.parse import urlparse
 
-GITHUB_AUTH_TOKEN = "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"
-SERVER_BASE_URL = "https://dropme.up.railway.app"
-MACHINE_API_KEY = "ojs7JhND.0UEhbrBfyMFstQBjjCG8I3o2fCPTUxb7"
+GITHUB_AUTH_TOKEN = os.getenv("GITHUB_AUTH_TOKEN", "")
+SERVER_BASE_URL = os.getenv("DROPME_SERVER_BASE_URL", "https://dropme.up.railway.app").rstrip("/")
+MACHINE_API_KEY = os.getenv("MACHINE_API_KEY", "")
 
 LOGGER_FORMAT = "%(asctime)s %(levelname)s:%(name)s %(message)s"
 LOGGER_DATEFMT = "%Y-%m-%d %H:%M:%S"
 LOG_ROTATION_BACKUP_COUNT = int(os.getenv("SV_LOG_BACKUP_COUNT", "14"))
-STATE_DIR = Path(os.getenv("XDG_STATE_HOME", "~/.local/state")).expanduser().joinpath("dropme")
-DATA_DIR = Path("~/.local/share/dropme/gui").expanduser()
+
+
+def _default_state_home() -> Path:
+    xdg_state = os.getenv("XDG_STATE_HOME", "").strip()
+    if xdg_state:
+        return Path(xdg_state).expanduser()
+    if platform.system().lower().startswith("win"):
+        local_app_data = os.getenv("LOCALAPPDATA", "").strip()
+        if local_app_data:
+            return Path(local_app_data) / "dropme" / "state"
+    return Path("~/.local/state").expanduser()
+
+
+def _default_data_home() -> Path:
+    xdg_data = os.getenv("XDG_DATA_HOME", "").strip()
+    if xdg_data:
+        return Path(xdg_data).expanduser()
+    if platform.system().lower().startswith("win"):
+        local_app_data = os.getenv("LOCALAPPDATA", "").strip()
+        if local_app_data:
+            return Path(local_app_data)
+    return Path("~/.local/share").expanduser()
+
+
+STATE_DIR = Path(os.getenv("DROPME_STATE_DIR", str(_default_state_home() / "dropme"))).expanduser()
+DATA_DIR = Path(os.getenv("DROPME_DATA_DIR", str(_default_data_home() / "dropme" / "gui"))).expanduser()
 
 logger = logging.getLogger(__name__)
 
 
 def update_videos() -> None:
+    if not MACHINE_API_KEY:
+        logger.error("MACHINE_API_KEY is not set; cannot update videos")
+        return
     with requests.get(
         f"{SERVER_BASE_URL}/machines/videos",
         headers={
@@ -75,6 +103,9 @@ def update_videos() -> None:
 
 
 def update_gui() -> None:
+    if not GITHUB_AUTH_TOKEN:
+        logger.error("GITHUB_AUTH_TOKEN is not set; cannot update GUI from GitHub releases")
+        return
     with Github(auth=Auth.Token(GITHUB_AUTH_TOKEN)) as gh:
         repo = gh.get_repo("dropmeteamwork/GUI")
         release = repo.get_latest_release()

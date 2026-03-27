@@ -23,6 +23,7 @@ from torchvision.models import efficientnet_b3, EfficientNet_B3_Weights
 
 from gui.brand_recognizer import BrandRecognizer
 from gui.aws_uploader import AWSUploader
+from gui.runtime_paths import captures_dir, metadata_dir, model_logs_dir, models_dir
 import threading
 
 # ============================================================================
@@ -30,17 +31,13 @@ import threading
 # ============================================================================
 class Config:
     """
-    Production configuration.  The literal strings for the expected
-    model and log paths are declared here so that the validation
-    script can verify them.  These strings are expanded at runtime.
+    Production configuration.
+    Runtime paths are resolved from a shared cross-platform resolver:
+      - DROPME_MODELS_DIR (optional override)
+      - DROPME_STATE_DIR/XDG_STATE_HOME/LOCALAPPDATA fallback chain
     """
-    # Expected paths for the deployment validator
-    EXPECTED_MODEL_PATH_STRING = "~/.local/state/dropme/gui-v1.1.3/src/gui/new_models"
-    EXPECTED_LOG_PATH_STRING   = "~/.local/state/dropme/gui-v1.1.3/src/gui/new_models/log"
-
-    # Expand user to get actual paths
-    BASE_MODEL_PATH = Path(EXPECTED_MODEL_PATH_STRING).expanduser()
-    LOG_PATH        = Path(EXPECTED_LOG_PATH_STRING).expanduser()
+    BASE_MODEL_PATH = models_dir()
+    LOG_PATH = model_logs_dir()
 
     # Ensure directories exist
     BASE_MODEL_PATH.mkdir(parents=True, exist_ok=True)
@@ -70,7 +67,7 @@ class Config:
     AWS_SECRET_ACCESS_KEY  = os.getenv('AWS_SECRET_ACCESS_KEY', '')
     AWS_BUCKET_NAME = os.getenv('AWS_BUCKET_NAME', '')
     AWS_REGION      = os.getenv('AWS_REGION', 'eu-central-1')
-    MACHINE_NAME    = os.getenv('MACHINE_NAME', 'maadi_club')
+    MACHINE_NAME    = os.getenv('MACHINE_NAME', 'RVM-001')
 
     # Detection thresholds
     YOLO_CONF_THRESHOLD     = float(os.getenv('YOLO_CONF_THRESHOLD', '0.1'))
@@ -498,17 +495,17 @@ class MLModel:
         Uses the normal predict() pipeline (YOLO + classifier + AWS queue).
         Returns how many images were processed.
         """
-        captures_dir = Path.home() / ".local/share/dropme/gui/captures"
-        metadata_dir = Path.home() / ".local/share/dropme/gui/metadata"
+        captures_dir_path = captures_dir()
+        metadata_dir_path = metadata_dir()
 
-        if not captures_dir.exists():
+        if not captures_dir_path.exists():
             self.logger.info("No captures_dir found for backfill.")
             return 0
 
         processed = 0
-        for img_path in captures_dir.glob("*.jpg"):
+        for img_path in captures_dir_path.glob("*.jpg"):
             capture_id = img_path.stem
-            meta_path = metadata_dir / f"{capture_id}.json"
+            meta_path = metadata_dir_path / f"{capture_id}.json"
 
             # Only process captures that have NO metadata yet
             if not meta_path.exists():

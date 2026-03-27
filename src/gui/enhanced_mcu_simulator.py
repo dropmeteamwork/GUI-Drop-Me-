@@ -18,13 +18,26 @@ Usage:
     (GUI connects to paired port COM11)
 
 Controls (press key, no Enter):
-    h = Gate obstruction ON (GATE_BLOCKED)
+    1 = SYS_READY
+    2 = SYS_BUSY
+    3 = SYS_IDLE
+    4 = GATE_OPENED
+    5 = GATE_CLOSED
+    6 = CONVEYOR_DONE
+    7 = SORT_DONE (PLASTIC)
+    8 = SORT_DONE (CAN)
+    9 = REJECT_DONE
+    0 = REJECT_HOME_OK
+    h = GATE_BLOCKED
     u = Gate obstruction OFF (resume pending close if any)
     w = WEIGHT_DATA (random)
     p = BIN_PLASTIC_FULL
     c = BIN_CAN_FULL
     r = BIN_REJECT_FULL
+    t = ERR_GATE_TIMEOUT
     e = ERR_MOTOR_STALL
+    f = ERR_SENSOR_FAIL
+    b = ERR_BIN_FULL
     s = Show status
     q = Quit
 """
@@ -120,6 +133,31 @@ class ErrorFault(IntEnum):
 class ItemType(IntEnum):
     PLASTIC = 0x01
     CAN = 0x02
+
+MANUAL_CONTROL_LINES = [
+    ("1", "SYS_READY"),
+    ("2", "SYS_BUSY"),
+    ("3", "SYS_IDLE"),
+    ("4", "GATE_OPENED"),
+    ("5", "GATE_CLOSED"),
+    ("6", "CONVEYOR_DONE"),
+    ("7", "SORT_DONE (PLASTIC)"),
+    ("8", "SORT_DONE (CAN)"),
+    ("9", "REJECT_DONE"),
+    ("0", "REJECT_HOME_OK"),
+    ("h", "Hand in gate (GATE_BLOCKED)"),
+    ("u", "Unblock gate (resume pending close)"),
+    ("w", "Weight sensor"),
+    ("p", "Plastic bin FULL"),
+    ("c", "Can bin FULL"),
+    ("r", "Reject bin FULL"),
+    ("t", "Error (gate timeout)"),
+    ("e", "Error (motor stall)"),
+    ("f", "Error (sensor fail)"),
+    ("b", "Error (bin full)"),
+    ("s", "Show status"),
+    ("q", "Quit"),
+]
 
 # ==================== CRC / FRAME ====================
 
@@ -301,15 +339,8 @@ class MCUSimulator:
         print(f"  Log : {self.logger.path}")
         print("=" * 70)
         print("  Controls (press key, no Enter):")
-        print("    h = Hand in gate (GATE_BLOCKED)")
-        print("    u = Unblock gate (resume pending close)")
-        print("    w = Weight sensor")
-        print("    p = Plastic bin FULL")
-        print("    c = Can bin FULL")
-        print("    r = Reject bin FULL")
-        print("    e = Error (motor stall)")
-        print("    s = Show status")
-        print("    q = Quit")
+        for key, description in MANUAL_CONTROL_LINES:
+            print(f"    {key} = {description}")
         print("=" * 70)
         print("\n  Waiting for frames...\n")
 
@@ -488,12 +519,74 @@ class MCUSimulator:
         self._pending_gate_close_seq = None
         self.send(seq, StatusFeedback.GATE_CLOSED, 0x00, "close completed after unblock")
 
+    def _send_manual_event(self, cmd: int, payload: int = 0x00, note: str = "") -> None:
+        if cmd == StatusFeedback.SYS_READY:
+            self._set_busy(False)
+        elif cmd == StatusFeedback.SYS_BUSY:
+            self._set_busy(True)
+        elif cmd == StatusFeedback.SYS_IDLE:
+            self._set_busy(False)
+        elif cmd == StatusFeedback.GATE_OPENED:
+            self.gate_open = True
+            self.gate_blocked = False
+            self._close_requested = False
+            self._pending_gate_close_seq = None
+        elif cmd == StatusFeedback.GATE_CLOSED:
+            self.gate_open = False
+            self.gate_blocked = False
+            self._close_requested = False
+            self._pending_gate_close_seq = None
+        elif cmd == StatusFeedback.GATE_BLOCKED:
+            self.gate_blocked = True
+        elif cmd in (ErrorFault.ERR_GATE_TIMEOUT, ErrorFault.ERR_MOTOR_STALL, ErrorFault.ERR_SENSOR_FAIL):
+            self._set_busy(False)
+        self.send_async(cmd, payload, note)
+
     def handle_key(self, key: str) -> None:
         key = key.lower()
 
+        if key == "1":
+            self._send_manual_event(StatusFeedback.SYS_READY, 0x00, "operator: sys ready")
+            return
+
+        if key == "2":
+            self._send_manual_event(StatusFeedback.SYS_BUSY, 0x00, "operator: sys busy")
+            return
+
+        if key == "3":
+            self._send_manual_event(StatusFeedback.SYS_IDLE, 0x00, "operator: sys idle")
+            return
+
+        if key == "4":
+            self._send_manual_event(StatusFeedback.GATE_OPENED, 0x00, "operator: gate opened")
+            return
+
+        if key == "5":
+            self._send_manual_event(StatusFeedback.GATE_CLOSED, 0x00, "operator: gate closed")
+            return
+
+        if key == "6":
+            self._send_manual_event(StatusFeedback.CONVEYOR_DONE, 0x00, "operator: conveyor done")
+            return
+
+        if key == "7":
+            self._send_manual_event(StatusFeedback.SORT_DONE, ItemType.PLASTIC, "operator: sort done plastic")
+            return
+
+        if key == "8":
+            self._send_manual_event(StatusFeedback.SORT_DONE, ItemType.CAN, "operator: sort done can")
+            return
+
+        if key == "9":
+            self._send_manual_event(StatusFeedback.REJECT_DONE, 0x00, "operator: reject done")
+            return
+
+        if key == "0":
+            self._send_manual_event(StatusFeedback.REJECT_HOME_OK, 0x00, "operator: reject home ok")
+            return
+
         if key == "h":
-            self.gate_blocked = True
-            self.send_async(StatusFeedback.GATE_BLOCKED, 0x01, "operator: hand in gate")
+            self._send_manual_event(StatusFeedback.GATE_BLOCKED, 0x01, "operator: hand in gate")
             self.logger.write({"ts": self.logger.now_iso(), "direction": "OP", "event": "BLOCK_GATE"})
             return
 
@@ -525,19 +618,31 @@ class MCUSimulator:
             return
 
         if key == "p":
-            self.send_async(SensorData.BIN_PLASTIC_FULL, 0x01, "operator: plastic bin full")
+            self._send_manual_event(SensorData.BIN_PLASTIC_FULL, 0x01, "operator: plastic bin full")
             return
 
         if key == "c":
-            self.send_async(SensorData.BIN_CAN_FULL, 0x01, "operator: can bin full")
+            self._send_manual_event(SensorData.BIN_CAN_FULL, 0x01, "operator: can bin full")
             return
 
         if key == "r":
-            self.send_async(SensorData.BIN_REJECT_FULL, 0x01, "operator: reject bin full")
+            self._send_manual_event(SensorData.BIN_REJECT_FULL, 0x01, "operator: reject bin full")
+            return
+
+        if key == "t":
+            self._send_manual_event(ErrorFault.ERR_GATE_TIMEOUT, 0x01, "operator: gate timeout")
             return
 
         if key == "e":
-            self.send_async(ErrorFault.ERR_MOTOR_STALL, 0x01, "operator: motor stall")
+            self._send_manual_event(ErrorFault.ERR_MOTOR_STALL, 0x01, "operator: motor stall")
+            return
+
+        if key == "f":
+            self._send_manual_event(ErrorFault.ERR_SENSOR_FAIL, 0x01, "operator: sensor fail")
+            return
+
+        if key == "b":
+            self._send_manual_event(ErrorFault.ERR_BIN_FULL, 0x01, "operator: bin full")
             return
 
         if key == "s":
