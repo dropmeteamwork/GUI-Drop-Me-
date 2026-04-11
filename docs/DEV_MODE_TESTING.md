@@ -1,100 +1,109 @@
-# Dev Mode Test Guide (Parity + Protocol)
+# Dev Mode Test Guide
 
-This guide ensures **dev mode behaves like operating mode** as closely as possible.
+Dev mode is now intended to be a parity harness, not a separate behavior path.
 
-## 0) Core principle
+## Parity rules
 
-- Run GUI with `--dev` for tooling/controls.
-- Keep production behavior enabled (ML ON, serial protocol ON).
-- Use simulator only to inject hardware events.
+- `--dev` only enables tooling and visibility.
+- Real serial framing stays on.
+- Real ML stays on unless you explicitly opt out.
+- MCU-side events should come from the simulator so the GUI exercises the same RX path as operating mode.
+- Local sensor shortcut buttons are disabled by default because they bypass the serial layer.
 
-## 1) Start setup
+## Recommended setup
 
-1. Create virtual serial pair (example): `COM10 <-> COM11`.
-2. Start simulator on one side:
+1. Create a virtual serial pair such as `COM10 <-> COM11`.
+2. Start the simulator on one side:
 
 ```bash
 python src/gui/enhanced_mcu_simulator.py COM10
 ```
 
-3. Start GUI on the paired side:
+3. Start the GUI on the other side:
 
 ```bash
-python -m gui.main --dev
+uv run python -m gui.main --dev
 ```
 
-## 2) ML parity in dev mode
+## Optional dev-only escape hatches
 
-- Dev mode now keeps ML active by default (same as production path).
-- Only skip ML intentionally with:
+- Skip ML on purpose:
 
 ```bash
 set DROPME_DEV_SKIP_ML=1
-python -m gui.main --dev
+uv run python -m gui.main --dev
 ```
 
-## 3) Hardware/sensor event injection matrix
+- Re-enable local sensor shortcut buttons (non-parity path):
 
-From simulator terminal:
+```bash
+set DROPME_DEV_LOCAL_SENSOR_OVERRIDE=1
+uv run python -m gui.main --dev
+```
 
-- `1` / `2` / `3` -> `SYS_READY` / `SYS_BUSY` / `SYS_IDLE`
-- `4` / `5` / `h` -> `GATE_OPENED` / `GATE_CLOSED` / `GATE_BLOCKED`
-- `6` / `7` / `8` / `9` / `0` -> `CONVEYOR_DONE` / `SORT_DONE(plastic)` / `SORT_DONE(can)` / `REJECT_DONE` / `REJECT_HOME_OK`
-- `u` -> gate clear (`GATE_OPENED` or `GATE_CLOSED`) for popup clear path
-- `w` -> `WEIGHT_DATA`
-- `p` -> `BIN_PLASTIC_FULL`
-- `c` -> `BIN_CAN_FULL`
-- `r` -> `BIN_REJECT_FULL`
-- `t` / `e` / `f` / `b` -> `ERR_GATE_TIMEOUT` / `ERR_MOTOR_STALL` / `ERR_SENSOR_FAIL` / `ERR_BIN_FULL`
-- `s` -> print simulator state
+Use that override only for fast UI experiments. It is not a production-parity test.
 
-From GUI dev panel (RecycleView):
+## What the simulator now enforces
 
-- `sensor hand ON` / `sensor hand OFF`
-- `bin plastic FULL` / `bin can FULL` / `clear bins`
-- ML result buttons: `plastic`, `aluminum`, `other`, `hand`
+- Documented PC -> MCU requests must match the published reference bytes exactly.
+- Bad CRC / malformed frames produce `NACK`.
+- Reference-mismatched request bytes also produce `NACK`.
 
-## 4) Test cases (must pass)
+That means dev mode can now catch request framing drift instead of silently hiding it.
 
-### A) Hand popup persistence
-1. Trigger hand sensor (`h` or `sensor hand ON`).
-2. Verify hand popup appears and **does not disappear automatically** while blocked.
-3. Clear sensor (`u` or `sensor hand OFF`).
-4. Verify popup clears.
+## Core validation flow
 
-### B) Bin full visual + logic lock
-1. Trigger plastic full (`p` or dev button).
-2. Verify plastic full overlay appears.
-3. Trigger plastic ML result.
-4. Verify no plastic accept command is sent to MCU and count does not increment.
-5. Repeat for can full (`c`).
+1. Connect the GUI to the simulator.
+2. Confirm the initial ping succeeds.
+3. Use the Protocol Test panel or the normal recycle flow.
+4. Watch the simulator log and `src/dropme_protocol_logs/` artifacts.
+5. Trigger MCU events from the simulator terminal and verify the GUI reacts correctly.
 
-### C) End flow responsiveness
-1. Press End during recycle.
-2. Verify immediate transition to finish behavior (no long wait for timer tick).
-3. For phone flow with network down, verify offline finish fallback appears quickly.
+## High-value checks
 
-### D) Protocol sanity
-1. Use Protocol Test view for command coverage.
-2. Verify TX/RX for system/op/gate/sort/reject commands.
+### 1. Hand / gate blocking
 
-## 5) Sensor telemetry files
+1. Start a session.
+2. Trigger gate alarm from the simulator.
+3. Verify the hand-blocked UX appears and stays active.
+4. Clear the alarm from the simulator.
+5. Verify the popup clears and the flow resumes correctly.
 
-All runtime sensor+status/error data is persisted under:
+### 2. Accept plastic / aluminum
 
-- `src/dropme_protocol_logs/protocol_events.jsonl` (all TX/RX protocol traffic)
-- `src/dropme_protocol_logs/weights.csv` (weights)
-- `src/dropme_protocol_logs/sensor_events.jsonl` (sensor/status/error events)
-- `src/dropme_protocol_logs/sensor_snapshot.json` (latest sensor/system state)
+1. Start a session.
+2. Trigger plastic or aluminum from the GUI flow.
+3. Verify the outgoing request bytes match the reference.
+4. Verify the simulator emits `ITEM_DROPPED`.
+5. Verify the GUI records the accepted item and starts exit-gate verification.
 
-## 6) Bin-full image assets (recommended names)
+### 3. Reject path
 
-Add these four files to `images/`:
+1. Start a session.
+2. Trigger reject from the GUI.
+3. Verify `REJECT_ITEM` request bytes match the reference.
+4. Verify the session remains stable and no fake success event is invented by the GUI.
 
-- `en-overlay-bin-full-plastic.png`
-- `en-overlay-bin-full-can.png`
-- `ar-overlay-bin-full-plastic.png`
-- `ar-overlay-bin-full-can.png`
+### 4. End session
 
-The code is already wired to these names via `MultilingualResource` in `RecycleView.qml`.
-If a file is missing, fallback drawn overlay is used.
+1. End the session from the GUI.
+2. Verify `END_SESSION` matches the reference bytes.
+3. Verify the simulator emits `BASKET_STATUS`.
+4. Verify the GUI follows up with `GATE_CLOSED` polling and returns to connected/idle state.
+
+### 5. CRC / protocol drift
+
+1. Use the simulator `x` shortcut to send a bad-CRC frame.
+2. Verify the GUI logs `crc_invalid` / malformed RX.
+3. Temporarily change a request in code if you want to test strictness.
+4. Verify the simulator returns `NACK` for a non-reference request frame.
+
+## Runtime artifacts
+
+The GUI writes parity evidence to:
+
+- `src/dropme_protocol_logs/protocol_events.jsonl`
+- `src/dropme_protocol_logs/session_events.csv`
+- `src/dropme_protocol_logs/sensor_events.jsonl`
+- `src/dropme_protocol_logs/sensor_snapshot.json`
+- `src/dropme_protocol_logs/protocol_state.json`

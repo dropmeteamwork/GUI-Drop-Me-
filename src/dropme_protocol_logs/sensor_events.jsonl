@@ -114,3 +114,492 @@
 {"ts": "2026-03-09T01:57:15+02:00", "session_id": "0148e1e29e14446b89accd238b1c4e4e", "port": "COM10", "kind": "BIN_CAN_FULL", "payload": 1}
 {"ts": "2026-03-09T01:57:24+02:00", "session_id": "0148e1e29e14446b89accd238b1c4e4e", "port": "COM10", "kind": "GATE_BLOCKED", "payload": 0}
 {"ts": "2026-03-09T01:57:25+02:00", "session_id": "0148e1e29e14446b89accd238b1c4e4e", "port": "COM10", "kind": "GATE_CLOSED", "payload": 0}
+{"ts": "2026-04-03T00:27:54+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 8, "sensor_name": "BASKET_1"}
+{"ts": "2026-04-03T00:27:54+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 9, "sensor_name": "BASKET_2"}
+{"ts": "2026-04-03T00:27:54+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 10, "sensor_name": "BASKET_3"}
+{"ts": "2026-04-03T00:27:54+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 3, "sensor_name": "GATE_OPENED"}
+{"ts": "2026-04-03T00:27:54+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T00:27:55+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T00:27:56+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:27:56+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:27:57+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:27:58+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T00:27:59+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:27:59+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:28:00+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:28:01+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T00:28:01+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:28:02+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:28:03+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:28:03+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T00:28:04+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:28:05+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:28:06+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:28:06+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T00:28:07+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:28:08+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:28:08+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:28:09+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T00:28:10+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:28:10+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:28:11+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:28:12+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 22, "milligrams": 21978}
+{"ts": "2026-04-03T00:28:13+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:28:13+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:28:14+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:28:15+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 22, "milligrams": 21978}
+{"ts": "2026-04-03T00:28:15+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:28:16+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:28:17+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:28:18+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 22, "milligrams": 21978}
+{"ts": "2026-04-03T00:28:18+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:28:19+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:28:20+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:28:20+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 22, "milligrams": 21978}
+{"ts": "2026-04-03T00:28:21+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:28:22+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:28:22+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:28:23+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 22, "milligrams": 21978}
+{"ts": "2026-04-03T00:28:24+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:28:25+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:28:25+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:28:27+02:00", "session_id": "1c34cd359e334134b88cda535aa81310", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T00:28:27+02:00", "session_id": "", "port": "COM11", "kind": "BASKET_STATUS", "payload": 0, "raw_hex": ""}
+{"ts": "2026-04-03T00:28:27+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T00:41:22+02:00", "session_id": "", "port": "COM11", "kind": "BASKET_STATUS", "payload": 0, "raw_hex": ""}
+{"ts": "2026-04-03T00:41:22+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T00:41:29+02:00", "session_id": "", "port": "COM11", "kind": "BASKET_STATUS", "payload": 0, "raw_hex": ""}
+{"ts": "2026-04-03T00:41:29+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T00:41:34+02:00", "session_id": "", "port": "COM11", "kind": "BASKET_STATUS", "payload": 0, "raw_hex": ""}
+{"ts": "2026-04-03T00:41:34+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T00:41:53+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 8, "sensor_name": "BASKET_1"}
+{"ts": "2026-04-03T00:41:53+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 9, "sensor_name": "BASKET_2"}
+{"ts": "2026-04-03T00:41:53+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 10, "sensor_name": "BASKET_3"}
+{"ts": "2026-04-03T00:41:54+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 3, "sensor_name": "GATE_OPENED"}
+{"ts": "2026-04-03T00:41:54+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T00:41:54+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T00:41:55+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:41:56+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:41:57+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:41:57+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T00:41:58+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:41:59+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:41:59+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:42:00+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T00:42:01+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:42:02+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:42:02+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:42:03+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T00:42:04+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:42:04+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:42:05+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:42:06+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T00:42:06+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T00:42:07+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T00:42:08+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T00:42:09+02:00", "session_id": "c289f62a9bbf4000bd20387cc1ad7dbb", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T00:42:10+02:00", "session_id": "", "port": "COM11", "kind": "BASKET_STATUS", "payload": 0, "raw_hex": ""}
+{"ts": "2026-04-03T00:42:10+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T02:42:12+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 8, "sensor_name": "BASKET_1"}
+{"ts": "2026-04-03T02:42:12+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 9, "sensor_name": "BASKET_2"}
+{"ts": "2026-04-03T02:42:12+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 10, "sensor_name": "BASKET_3"}
+{"ts": "2026-04-03T02:42:13+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 3, "sensor_name": "GATE_OPENED"}
+{"ts": "2026-04-03T02:42:13+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T02:42:13+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T02:42:14+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T02:42:15+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T02:42:16+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T02:42:16+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T02:42:17+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T02:42:18+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T02:42:18+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T02:42:19+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T02:42:20+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T02:42:20+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T02:42:21+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T02:42:22+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T02:42:23+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T02:42:23+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T02:42:24+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T02:42:25+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T02:42:25+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T02:42:26+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T02:42:27+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T02:42:28+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T02:42:28+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T02:42:29+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T02:42:30+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T02:42:30+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T02:42:31+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T02:42:32+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T02:42:32+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T02:42:33+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T02:42:34+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T02:42:35+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T02:42:35+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T02:42:37+02:00", "session_id": "2208c29d36754ebba2924f35d64cdb3c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T02:42:37+02:00", "session_id": "", "port": "COM11", "kind": "BASKET_STATUS", "payload": 0, "raw_hex": ""}
+{"ts": "2026-04-03T02:42:37+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T02:42:43+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 8, "sensor_name": "BASKET_1"}
+{"ts": "2026-04-03T02:42:43+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 9, "sensor_name": "BASKET_2"}
+{"ts": "2026-04-03T02:42:43+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 10, "sensor_name": "BASKET_3"}
+{"ts": "2026-04-03T02:42:44+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 3, "sensor_name": "GATE_OPENED"}
+{"ts": "2026-04-03T02:42:44+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T02:42:45+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T02:42:46+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T02:42:46+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T02:42:47+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T02:42:48+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T02:42:48+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T02:42:49+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T02:42:50+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T02:42:50+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T02:42:51+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T02:42:52+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T02:42:53+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T02:42:53+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T02:42:54+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T02:42:55+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T02:42:55+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T02:42:56+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T02:42:57+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T02:42:58+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T02:42:58+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T02:42:59+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T02:43:00+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T02:43:00+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T02:43:02+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T02:43:02+02:00", "session_id": "2acbad2448d14771a2826b0944e05f35", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T02:43:02+02:00", "session_id": "", "port": "COM11", "kind": "BASKET_STATUS", "payload": 0, "raw_hex": ""}
+{"ts": "2026-04-03T02:43:02+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T21:06:24+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 8, "sensor_name": "BASKET_1"}
+{"ts": "2026-04-03T21:06:24+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 9, "sensor_name": "BASKET_2"}
+{"ts": "2026-04-03T21:06:24+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 10, "sensor_name": "BASKET_3"}
+{"ts": "2026-04-03T21:06:25+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 3, "sensor_name": "GATE_OPENED"}
+{"ts": "2026-04-03T21:06:25+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T21:06:26+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T21:06:26+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:06:27+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:06:28+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:06:28+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T21:06:29+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:06:30+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:06:30+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:06:31+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T21:06:32+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:06:33+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:06:33+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:06:34+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T21:06:35+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:06:35+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:06:36+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:06:37+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T21:06:38+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:06:38+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:06:39+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:06:40+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T21:06:40+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:06:41+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:06:42+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:06:42+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T21:06:43+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:06:44+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:06:45+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:06:45+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T21:06:46+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:06:47+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:06:47+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:06:49+02:00", "session_id": "4924a713cff040ca943b1e62d4bcf2f1", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T21:06:49+02:00", "session_id": "", "port": "COM11", "kind": "BASKET_STATUS", "payload": 0, "raw_hex": ""}
+{"ts": "2026-04-03T21:06:49+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T21:07:03+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 8, "sensor_name": "BASKET_1"}
+{"ts": "2026-04-03T21:07:03+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 9, "sensor_name": "BASKET_2"}
+{"ts": "2026-04-03T21:07:03+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 10, "sensor_name": "BASKET_3"}
+{"ts": "2026-04-03T21:07:03+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 3, "sensor_name": "GATE_OPENED"}
+{"ts": "2026-04-03T21:07:03+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T21:07:04+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T21:07:05+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:05+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:06+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:07+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T21:07:07+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:08+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:09+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:10+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T21:07:10+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:11+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:12+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:12+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T21:07:13+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:14+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:15+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:15+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T21:07:16+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:17+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:17+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:18+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-03T21:07:19+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:19+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:20+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:21+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 22, "milligrams": 22480}
+{"ts": "2026-04-03T21:07:22+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:22+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:23+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:24+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 22, "milligrams": 22480}
+{"ts": "2026-04-03T21:07:24+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:25+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:26+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:26+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 22, "milligrams": 22480}
+{"ts": "2026-04-03T21:07:27+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:28+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:29+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:29+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 22, "milligrams": 22480}
+{"ts": "2026-04-03T21:07:30+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:31+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:31+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:32+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 19, "milligrams": 19446}
+{"ts": "2026-04-03T21:07:33+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:34+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:34+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:35+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 11, "milligrams": 10700}
+{"ts": "2026-04-03T21:07:36+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:36+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:37+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:38+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 11, "milligrams": 10700}
+{"ts": "2026-04-03T21:07:38+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:39+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:40+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:41+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 11, "milligrams": 10700}
+{"ts": "2026-04-03T21:07:41+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:42+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:43+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:43+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 11, "milligrams": 10700}
+{"ts": "2026-04-03T21:07:44+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:45+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:45+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:46+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 11, "milligrams": 10700}
+{"ts": "2026-04-03T21:07:47+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:48+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:48+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:07:49+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 11, "milligrams": 10700}
+{"ts": "2026-04-03T21:07:50+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:07:50+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:07:52+02:00", "session_id": "2be238669c56484ea6a771c7bc08ec83", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T21:07:52+02:00", "session_id": "", "port": "COM11", "kind": "BASKET_STATUS", "payload": 0, "raw_hex": ""}
+{"ts": "2026-04-03T21:07:52+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T21:08:51+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 8, "sensor_name": "BASKET_1"}
+{"ts": "2026-04-03T21:08:52+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 9, "sensor_name": "BASKET_2"}
+{"ts": "2026-04-03T21:08:52+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 10, "sensor_name": "BASKET_3"}
+{"ts": "2026-04-03T21:08:52+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 3, "sensor_name": "GATE_OPENED"}
+{"ts": "2026-04-03T21:08:52+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T21:08:53+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:08:54+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 11, "milligrams": 10700}
+{"ts": "2026-04-03T21:08:54+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:08:55+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:08:56+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:08:56+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 11, "milligrams": 10700}
+{"ts": "2026-04-03T21:08:57+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:08:58+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:08:59+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:08:59+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 11, "milligrams": 10700}
+{"ts": "2026-04-03T21:09:00+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:09:01+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:09:01+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:09:02+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 11, "milligrams": 10700}
+{"ts": "2026-04-03T21:09:03+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:09:04+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:09:04+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:09:05+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 11, "milligrams": 10700}
+{"ts": "2026-04-03T21:09:06+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:09:06+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:09:07+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:09:08+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 11, "milligrams": 10700}
+{"ts": "2026-04-03T21:09:08+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:09:09+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:09:10+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:09:11+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 11, "milligrams": 10700}
+{"ts": "2026-04-03T21:09:11+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:09:12+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:09:13+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:09:13+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 11, "milligrams": 10700}
+{"ts": "2026-04-03T21:09:14+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:09:15+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:09:16+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:09:16+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 42, "milligrams": 41597}
+{"ts": "2026-04-03T21:09:17+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:09:18+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:09:18+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:09:19+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 44, "milligrams": 44093}
+{"ts": "2026-04-03T21:09:20+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:09:20+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:09:21+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:09:22+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 44, "milligrams": 44093}
+{"ts": "2026-04-03T21:09:23+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:09:23+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:09:24+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:09:25+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 44, "milligrams": 44093}
+{"ts": "2026-04-03T21:09:25+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:09:26+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:09:27+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:09:27+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 44, "milligrams": 44093}
+{"ts": "2026-04-03T21:09:28+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:09:29+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:09:30+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:09:30+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 44, "milligrams": 44093}
+{"ts": "2026-04-03T21:09:31+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:09:32+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:09:32+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:09:33+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 44, "milligrams": 44093}
+{"ts": "2026-04-03T21:09:34+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:09:35+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-03T21:09:35+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-03T21:09:36+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 44, "milligrams": 44093}
+{"ts": "2026-04-03T21:09:37+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-03T21:09:38+02:00", "session_id": "1eada3ddcdf04c318e01755f7efb9187", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-03T21:09:38+02:00", "session_id": "", "port": "COM11", "kind": "BASKET_STATUS", "payload": 0, "raw_hex": ""}
+{"ts": "2026-04-03T21:09:38+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-06T09:34:35+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 8, "sensor_name": "BASKET_1"}
+{"ts": "2026-04-06T09:34:35+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 9, "sensor_name": "BASKET_2"}
+{"ts": "2026-04-06T09:34:35+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 10, "sensor_name": "BASKET_3"}
+{"ts": "2026-04-06T09:35:00+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 8, "sensor_name": "BASKET_1"}
+{"ts": "2026-04-06T09:35:00+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 9, "sensor_name": "BASKET_2"}
+{"ts": "2026-04-06T09:35:00+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 10, "sensor_name": "BASKET_3"}
+{"ts": "2026-04-06T09:35:01+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 3, "sensor_name": "GATE_OPENED"}
+{"ts": "2026-04-06T09:35:01+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-06T09:35:01+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:35:01+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-06T09:35:02+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:35:03+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:35:04+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:35:04+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-06T09:35:05+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:35:06+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:35:06+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:35:07+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 34, "milligrams": 34316}
+{"ts": "2026-04-06T09:35:08+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:35:09+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:35:09+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:35:10+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 41, "milligrams": 40667}
+{"ts": "2026-04-06T09:35:11+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:35:11+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:35:12+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:35:13+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 41, "milligrams": 40667}
+{"ts": "2026-04-06T09:35:13+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:35:14+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:35:15+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:35:16+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 41, "milligrams": 40667}
+{"ts": "2026-04-06T09:35:16+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:35:17+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:35:18+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:35:18+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 41, "milligrams": 40667}
+{"ts": "2026-04-06T09:35:19+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:35:20+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:35:20+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:35:21+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 41, "milligrams": 40667}
+{"ts": "2026-04-06T09:35:22+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:35:23+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:35:23+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:35:24+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 41, "milligrams": 40667}
+{"ts": "2026-04-06T09:35:25+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:35:25+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:35:26+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:35:27+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 41, "milligrams": 40667}
+{"ts": "2026-04-06T09:35:28+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:35:28+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:35:29+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:35:30+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 41, "milligrams": 40667}
+{"ts": "2026-04-06T09:35:30+02:00", "session_id": "64328dc0fc5147a7a5895d266b6444fe", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:35:32+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-06T09:35:32+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:35:32+02:00", "session_id": "", "port": "COM11", "kind": "BASKET_STATUS", "payload": 0, "raw_hex": ""}
+{"ts": "2026-04-06T09:35:32+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-06T09:35:32+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 8, "sensor_name": "BASKET_1"}
+{"ts": "2026-04-06T09:35:32+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 9, "sensor_name": "BASKET_2"}
+{"ts": "2026-04-06T09:35:32+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 10, "sensor_name": "BASKET_3"}
+{"ts": "2026-04-06T09:37:07+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 8, "sensor_name": "BASKET_1"}
+{"ts": "2026-04-06T09:37:07+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 9, "sensor_name": "BASKET_2"}
+{"ts": "2026-04-06T09:37:07+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 10, "sensor_name": "BASKET_3"}
+{"ts": "2026-04-06T09:37:19+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 8, "sensor_name": "BASKET_1"}
+{"ts": "2026-04-06T09:37:19+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 9, "sensor_name": "BASKET_2"}
+{"ts": "2026-04-06T09:37:19+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 10, "sensor_name": "BASKET_3"}
+{"ts": "2026-04-06T09:37:20+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 3, "sensor_name": "GATE_OPENED"}
+{"ts": "2026-04-06T09:37:20+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-06T09:37:20+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:21+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-06T09:37:21+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:22+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:37:23+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:37:24+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-06T09:37:24+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:25+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:37:26+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:37:26+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-06T09:37:27+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:28+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:37:29+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:37:29+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-06T09:37:30+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:31+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:37:31+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:37:32+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25000}
+{"ts": "2026-04-06T09:37:33+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:33+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:37:34+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:37:35+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 43, "milligrams": 43357}
+{"ts": "2026-04-06T09:37:36+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:36+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:37:37+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:37:38+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 43, "milligrams": 43357}
+{"ts": "2026-04-06T09:37:38+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:39+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:37:40+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:37:41+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 43, "milligrams": 43357}
+{"ts": "2026-04-06T09:37:41+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:42+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:37:43+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:37:43+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25497}
+{"ts": "2026-04-06T09:37:44+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:45+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:37:45+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:37:46+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25497}
+{"ts": "2026-04-06T09:37:47+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:48+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:37:48+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:37:49+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 25, "milligrams": 25497}
+{"ts": "2026-04-06T09:37:50+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:50+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:37:51+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:37:52+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 29, "milligrams": 28872}
+{"ts": "2026-04-06T09:37:52+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:53+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:37:54+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:37:55+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 29, "milligrams": 28872}
+{"ts": "2026-04-06T09:37:55+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:56+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:37:57+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:37:57+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 10, "milligrams": 10129}
+{"ts": "2026-04-06T09:37:58+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:37:59+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:38:00+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:38:00+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 10, "milligrams": 10129}
+{"ts": "2026-04-06T09:38:01+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:38:02+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:38:02+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:38:03+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 10, "milligrams": 10129}
+{"ts": "2026-04-06T09:38:04+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:38:04+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:38:05+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:38:06+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 10, "milligrams": 10129}
+{"ts": "2026-04-06T09:38:07+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:38:07+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:38:08+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 4, "sensor_name": "EXIT_GATE"}
+{"ts": "2026-04-06T09:38:09+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "WEIGHT_DATA", "payload": 10, "milligrams": 10129}
+{"ts": "2026-04-06T09:38:09+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:38:10+02:00", "session_id": "316d22fdc1da494793ea47160329630c", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 7, "sensor_name": "DROP_SENSOR"}
+{"ts": "2026-04-06T09:38:11+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-06T09:38:11+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 5, "sensor_name": "GATE_ALARM"}
+{"ts": "2026-04-06T09:38:11+02:00", "session_id": "", "port": "COM11", "kind": "BASKET_STATUS", "payload": 0, "raw_hex": ""}
+{"ts": "2026-04-06T09:38:11+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 1, "sensor_id": 2, "sensor_name": "GATE_CLOSED"}
+{"ts": "2026-04-06T09:38:11+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 8, "sensor_name": "BASKET_1"}
+{"ts": "2026-04-06T09:38:11+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 9, "sensor_name": "BASKET_2"}
+{"ts": "2026-04-06T09:38:11+02:00", "session_id": "", "port": "COM11", "kind": "SENSOR_DATA", "payload": 0, "sensor_id": 10, "sensor_name": "BASKET_3"}

@@ -1,20 +1,20 @@
 {
-  "ts": "2026-04-11T01:23:50+02:00",
-  "port": "",
+  "ts": "2026-04-08T11:17:00-07:00",
+  "port": "COM4",
   "session_id": "",
   "system": {
     "busy": false,
     "operation_active": false,
-    "stage": "disconnected"
+    "stage": "connected"
   },
   "gate": {
     "open": false,
     "blocked": false
   },
   "bins": {
-    "plastic_full": false,
-    "can_full": false,
-    "reject_full": false
+    "plastic_full": true,
+    "can_full": true,
+    "reject_full": true
   },
   "last_weight_grams": null,
   "prediction": {
@@ -27,9 +27,9 @@
     "gate_alarm": 0,
     "exit_gate": 0,
     "drop_sensor": 0,
-    "basket_1": 0,
-    "basket_2": 0,
-    "basket_3": 0
+    "basket_1": 1,
+    "basket_2": 1,
+    "basket_3": 1
   },
   "last_error": ""
 }

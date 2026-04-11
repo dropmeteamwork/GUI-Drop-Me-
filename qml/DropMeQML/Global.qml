@@ -8,21 +8,20 @@ import DropMe
 
 Item {
     property MainWindow window: null
-    property real screenWidth: window == null ? 1080 : Math.min(window.width, 9*window.height/16)
-    property real screenHeight: window == null ? 1920 : Math.min(16*window.width/9, window.height)
+    property real screenWidth: window == null ? 1080 : Math.min(window.width, 9 * window.height / 16)
+    property real screenHeight: window == null ? 1920 : Math.min(16 * window.width / 9, window.height)
     property real viewWidth: screenWidth
-    property real viewHeight: 2*screenHeight/5
+    property real viewHeight: 2 * screenHeight / 5
     property real viewRefWidth: 1080.0
     property real viewRefHeight: 768.0
-    property real viewWidthScale: viewWidth/viewRefWidth
-    property real viewHeightScale: viewHeight/viewRefHeight
+    property real viewWidthScale: viewWidth / viewRefWidth
+    property real viewHeightScale: viewHeight / viewRefHeight
 
     property FontLoader fontMedium: tajawalMediumFontLoader
     property FontLoader fontBold: tajawalBoldFontLoader
 
     property Server server: globalServer
     property AutoSerial serial: globalSerial
-
 
     enum Language {
         Arabic,
@@ -37,10 +36,6 @@ Item {
     Server {
         id: globalServer
     }
-
-    // Serial {
-    //     id: globalSerial
-    // }
 
     AutoSerial {
         id: globalSerial
@@ -61,13 +56,13 @@ Item {
     }
 
     function convertToArabicNumerals(inputString) {
-        var arabicNumerals = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+        var arabicNumerals = ["\u0660", "\u0661", "\u0662", "\u0663", "\u0664", "\u0665", "\u0666", "\u0667", "\u0668", "\u0669"];
         var result = "";
 
         for (var i = 0; i < inputString.length; i++) {
             var digit = inputString.charAt(i);
-            if (digit >= '0' && digit <= '9') {
-                result += arabicNumerals[digit.charCodeAt(0) - '0'.charCodeAt(0)];
+            if (digit >= "0" && digit <= "9") {
+                result += arabicNumerals[digit.charCodeAt(0) - "0".charCodeAt(0)];
             } else {
                 result += digit;
             }

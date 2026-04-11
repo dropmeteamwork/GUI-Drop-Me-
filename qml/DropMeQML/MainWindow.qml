@@ -48,11 +48,14 @@ Window {
     Connections {
         target: Global.serial
         function onConnectionEstablished(portName) { runtimeWatchdog.beatBackend() }
+        function onConnectionLost() { runtimeWatchdog.beatBackend(); EventBus.hwGateCleared() }
         function onCommandSent(cmdName, payload) { runtimeWatchdog.beatBackend() }
         function onHandInGate() { runtimeWatchdog.beatBackend(); EventBus.hwHandInGate() }
         function onGateOpened() { runtimeWatchdog.beatBackend(); EventBus.hwGateCleared() }
         function onGateClosed() { runtimeWatchdog.beatBackend(); EventBus.hwGateCleared() }
         function onBinFull(binName) { runtimeWatchdog.beatBackend(); EventBus.hwBinFull(binName) }
+        function onBasketStateChanged(binName, isFull) { runtimeWatchdog.beatBackend(); EventBus.hwBasketState(binName, isFull) }
+        function onAcceptedItemRollback(itemType) { runtimeWatchdog.beatBackend(); EventBus.hwAcceptedItemRollback(itemType) }
         function onErrorOccurred(errorName, errorId) { runtimeWatchdog.beatBackend(); EventBus.hwError(errorName, errorId) }
     }
 

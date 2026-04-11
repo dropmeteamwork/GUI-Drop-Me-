@@ -1,7 +1,13 @@
 from __future__ import annotations
 
+import json
+import os
+from pathlib import Path
+
 from PySide6.QtCore import QObject, Property, Signal, Slot
 from PySide6.QtQml import QmlElement, QmlSingleton
+
+from gui import PROJECT_DIR
 
 QML_IMPORT_NAME = "DropMe"
 QML_IMPORT_MAJOR_VERSION = 1
@@ -53,6 +59,7 @@ class AppState(QObject):
 
     def __init__(self) -> None:
         super().__init__()
+        self._check_baskets_enabled = str(os.environ.get("DROPME_CHECK_BASKETS", "1")).strip().lower() not in ("0", "false", "no", "off")
         self._hand_in_gate: bool = False
         self._should_sign_out: bool = False
         self._language: int = 1  # 0=Arabic, 1=English
@@ -73,6 +80,32 @@ class AppState(QObject):
         self._recycle_plastic_bin_full: bool = False
         self._recycle_can_bin_full: bool = False
         self._recycle_active_full_bin: str = ""
+
+        self._restore_persisted_basket_state()
+
+    def _restore_persisted_basket_state(self) -> None:
+        snapshot_path = Path(PROJECT_DIR) / "src" / "dropme_protocol_logs" / "sensor_snapshot.json"
+        try:
+            if not snapshot_path.exists():
+                return
+            snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        except Exception:
+            return
+
+        bins = snapshot.get("bins", {}) if isinstance(snapshot, dict) else {}
+        plastic_full = bool(bins.get("plastic_full", False)) if self._check_baskets_enabled else False
+        can_full = bool(bins.get("can_full", False)) if self._check_baskets_enabled else False
+
+        self._recycle_plastic_bin_full = plastic_full
+        self._recycle_can_bin_full = can_full
+        if plastic_full and can_full:
+            self._recycle_active_full_bin = "plastic"
+        elif plastic_full:
+            self._recycle_active_full_bin = "plastic"
+        elif can_full:
+            self._recycle_active_full_bin = "can"
+        else:
+            self._recycle_active_full_bin = ""
 
     # --- handInGate ---
     def get_hand_in_gate(self) -> bool:
@@ -259,16 +292,37 @@ class AppState(QObject):
 
     @Slot(str)
     def markRecycleBinFull(self, binName: str) -> None:
-        # Full-bin overlays are session-scoped in UI.
-        if not self._recycle_session_active:
+        if not self._check_baskets_enabled:
             return
         b = str(binName or "").strip().lower()
         if "plastic" in b:
             self.set_recycle_plastic_bin_full(True)
-            self.set_recycle_active_full_bin("plastic")
+            if not self._recycle_active_full_bin:
+                self.set_recycle_active_full_bin("plastic")
         elif "can" in b:
             self.set_recycle_can_bin_full(True)
+            if not self._recycle_active_full_bin:
+                self.set_recycle_active_full_bin("can")
+
+    @Slot(str, bool)
+    def setRecycleBinState(self, binName: str, isFull: bool) -> None:
+        b = str(binName or "").strip().lower()
+        full = bool(isFull) if self._check_baskets_enabled else False
+        if "plastic" in b:
+            self.set_recycle_plastic_bin_full(full)
+        elif "can" in b:
+            self.set_recycle_can_bin_full(full)
+        else:
+            return
+
+        if self._recycle_plastic_bin_full and not self._recycle_active_full_bin:
+            self.set_recycle_active_full_bin("plastic")
+        elif self._recycle_can_bin_full and not self._recycle_active_full_bin:
             self.set_recycle_active_full_bin("can")
+        elif not self._recycle_plastic_bin_full and self._recycle_active_full_bin == "plastic":
+            self.set_recycle_active_full_bin("can" if self._recycle_can_bin_full else "")
+        elif not self._recycle_can_bin_full and self._recycle_active_full_bin == "can":
+            self.set_recycle_active_full_bin("plastic" if self._recycle_plastic_bin_full else "")
 
     @Slot(str)
     def clearRecycleBinFull(self, binName: str = "") -> None:
@@ -302,6 +356,20 @@ class AppState(QObject):
         self.recyclePointsChanged.emit()
 
     @Slot()
+    def decrementRecyclePlastic(self) -> None:
+        if self._recycle_plastic <= 0:
+            return
+        self.set_recycle_plastic(self._recycle_plastic - 1)
+        self.recyclePointsChanged.emit()
+
+    @Slot()
+    def decrementRecycleCans(self) -> None:
+        if self._recycle_cans <= 0:
+            return
+        self.set_recycle_cans(self._recycle_cans - 1)
+        self.recyclePointsChanged.emit()
+
+    @Slot()
     def markRecycleFinished(self) -> None:
         self.set_recycle_has_finished(True)
 
@@ -311,13 +379,6 @@ class AppState(QObject):
         self._recycle_cans = 0
         self._recycle_has_finished = False
         self._recycle_session_active = True
-
-        # Dev/prod parity requirement for UI testing:
-        # each new recycle session starts from a clean visual state,
-        # then MCU full-bin events rebuild state.
-        self.set_recycle_plastic_bin_full(False)
-        self.set_recycle_can_bin_full(False)
-        self.set_recycle_active_full_bin("")
 
         self.recyclePlasticBottlesChanged.emit()
         self.recycleCansChanged.emit()
@@ -339,6 +400,8 @@ class AppState(QObject):
         if p == "hand":
             self.recycleUiHandsInserted.emit()
             self.recycleUiClockRestart.emit()
+            if predImage:
+                self.recycleUiShowCapture.emit(str(predImage))
             return
 
         if p == "aluminum":
@@ -373,6 +436,8 @@ class AppState(QObject):
             self.recycleRequestHardwareAction.emit("other")
             self.recycleUiOtherInserted.emit()
             self.recycleUiClockRestart.emit()
+            if predImage:
+                self.recycleUiShowCapture.emit(str(predImage))
             return
 
     @Slot(int, str)

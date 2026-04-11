@@ -58,7 +58,9 @@ If not set, app auto-selects OS-appropriate defaults.
   - Real serial + real ML path
 - Dev mode: `uv run python -m gui.main --dev`
   - Dev controls visible in UI
-  - ML prediction is intentionally skipped and can be simulated from dev buttons
+  - Real serial + real ML path stay enabled by default for parity with operating mode
+  - Use `DROPME_DEV_SKIP_ML=1` only when you intentionally want to bypass ML
+  - Local sensor shortcut buttons are disabled unless `DROPME_DEV_LOCAL_SENSOR_OVERRIDE=1`
 
 ## Windows Quick Start (tomorrow machine)
 

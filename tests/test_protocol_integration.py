@@ -1,4 +1,4 @@
-﻿import os
+import os
 import subprocess
 import sys
 import time
@@ -11,22 +11,30 @@ pytestmark = pytest.mark.integration
 def _try_import_serial():
     try:
         import serial  # type: ignore
+
         return serial
     except Exception:
         return None
 
 
-def _read_frame(ser, size=6, timeout=2.0):
+def _read_frame(ser, timeout=2.0):
+    from gui import mcu
+
     deadline = time.time() + timeout
     buf = bytearray()
-    while time.time() < deadline and len(buf) < size:
-        chunk = ser.read(size - len(buf))
+    while time.time() < deadline:
+        chunk = ser.read(64)
         if chunk:
             buf.extend(chunk)
-    return bytes(buf)
+            frame, consumed = mcu.Frame.try_parse_from_buffer(buf)
+            if frame is not None and consumed > 0:
+                return frame
+            if consumed > 0:
+                del buf[:consumed]
+    return None
 
 
-def test_simulator_protocol_flow_sys_init_ping_gate_open():
+def test_simulator_protocol_flow_ping_status_sensor():
     serial_mod = _try_import_serial()
     if serial_mod is None:
         pytest.skip("pyserial is not installed")
@@ -48,27 +56,24 @@ def test_simulator_protocol_flow_sys_init_ping_gate_open():
 
     try:
         time.sleep(1.2)
-        with serial_mod.Serial(gui_port, 9600, timeout=0.2) as ser:
-            # SYS_INIT -> SYS_READY
-            ser.write(mcu.Frame(1, mcu.SystemControl.SYS_INIT, 0).to_bytes())
-            raw = _read_frame(ser)
-            frame = mcu.Frame.from_bytes(raw)
+        with serial_mod.Serial(gui_port, mcu.BAUD_RATE, timeout=0.2) as ser:
+            ser.write(mcu.Frame(cmd=mcu.SystemControl.PING, payload=b"").to_bytes())
+            frame = _read_frame(ser)
             assert frame is not None
-            assert frame.cmd == int(mcu.StatusFeedback.SYS_READY)
+            assert frame.cmd == int(mcu.ResponseCode.ACK)
+            assert frame.payload == b"OK"
 
-            # SYS_PING -> SYS_IDLE or SYS_BUSY
-            ser.write(mcu.Frame(2, mcu.SystemControl.SYS_PING, 0).to_bytes())
-            raw = _read_frame(ser)
-            frame = mcu.Frame.from_bytes(raw)
+            ser.write(mcu.Frame(cmd=mcu.SystemControl.GET_MCU_STATUS, payload=b"").to_bytes())
+            frame = _read_frame(ser)
             assert frame is not None
-            assert frame.cmd in (int(mcu.StatusFeedback.SYS_IDLE), int(mcu.StatusFeedback.SYS_BUSY))
+            assert frame.cmd == int(mcu.ResponseCode.DATA)
+            assert len(frame.payload) == 1
 
-            # GATE_OPEN -> GATE_OPENED
-            ser.write(mcu.Frame(3, mcu.MotionControl.GATE_OPEN, 0).to_bytes())
-            raw = _read_frame(ser)
-            frame = mcu.Frame.from_bytes(raw)
+            ser.write(mcu.Frame(cmd=mcu.ReadCommand.READ_SENSOR, payload=bytes([int(mcu.SensorSelector.GATE_CLOSED)])).to_bytes())
+            frame = _read_frame(ser)
             assert frame is not None
-            assert frame.cmd == int(mcu.StatusFeedback.GATE_OPENED)
+            assert frame.cmd == int(mcu.ResponseCode.DATA)
+            assert frame.payload[0] == int(mcu.SensorSelector.GATE_CLOSED)
     finally:
         sim_proc.terminate()
         try:

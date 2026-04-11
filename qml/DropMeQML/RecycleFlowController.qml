@@ -1,4 +1,4 @@
-﻿import QtQuick
+import QtQuick
 import QtMultimedia
 
 import DropMe
@@ -8,6 +8,14 @@ Item {
     visible: false
     width: 0
     height: 0
+    property string pendingCleanupPath: ""
+
+    function shouldCaptureNow() {
+        return Global.serial.isDetectionAllowed()
+            && !controller.view.processingItem
+            && !controller.view.waitingPhoneFinishResponse
+            && !AppState.recycleHasFinished
+    }
 
     required property Item view
     required property ImageCapture imageCapture
@@ -61,10 +69,23 @@ Item {
     }
 
     function simulateDevPrediction(itemName) {
-        var capturePath = SystemInfo.getNextCapturePath()
-        controller.imageCapture.captureToFile(capturePath)
-        AppState.onPredictionResult(itemName, controller.view.userType, controller.view.phoneNumber, "")
-        Global.server.sendDevPrediction(itemName, capturePath)
+        // Route through the SAME predictionReady signal as production ML.
+        // This exercises: isDetectionAllowed() check, recordMlPrediction(),
+        // AppState.onPredictionResult(), and coordinator logic.
+        console.log("[DEV_SIM] simulateDevPrediction:", itemName)
+        Global.server.simulateDevPredictionResult(itemName)
+    }
+
+    Timer {
+        id: cleanupDelayTimer
+        interval: 2000
+        repeat: false
+        onTriggered: {
+            if (controller.pendingCleanupPath !== "") {
+                Global.server.cleanupFile(controller.pendingCleanupPath)
+                controller.pendingCleanupPath = ""
+            }
+        }
     }
 
     Connections {
@@ -86,6 +107,27 @@ Item {
         function onNewUserFailed() {
             flowCoordinator.onNewUserFailed()
         }
+
+        function onConnectionLost() {
+            flowCoordinator.onHandBlockStateChanged(false)
+            flowCoordinator.onHardwareCycleCompleted()
+        }
+
+        function onConveyorDone() {
+            flowCoordinator.onHardwareCycleCompleted()
+        }
+
+        function onItemRejected() {
+            flowCoordinator.onHardwareCycleCompleted()
+        }
+
+        function onRejectDone() {
+            flowCoordinator.onHardwareCycleCompleted()
+        }
+
+        function onRejectHomeOk() {
+            flowCoordinator.onHardwareCycleCompleted()
+        }
     }
 
     Connections {
@@ -96,6 +138,8 @@ Item {
         }
 
         function onPredictionReady(results, capturePath, systemPathToDelete) {
+            const pred = (results && results.length > 0) ? String(results[0] || "") : ""
+            console.log("[RecycleFlowController] predictionReady ->", pred, "image?", (results && results.length > 1) ? String(results[1] || "") !== "" : false)
             flowCoordinator.onPredictionReady(results, controller.view.userType, controller.view.phoneNumber, systemPathToDelete)
         }
     }
@@ -115,6 +159,10 @@ Item {
     Connections {
         target: AppState
 
+        function onHandInGateChanged() {
+            flowCoordinator.onHandBlockStateChanged(AppState.handInGate)
+        }
+
         function onRecycleUiClockRestart() {
             flowCoordinator.onRecycleUiClockRestart()
         }
@@ -133,6 +181,10 @@ Item {
         target: controller.view
 
         function onCaptureRequested() {
+            if (!controller.shouldCaptureNow()) {
+                console.log("[RecycleFlowController] capture skipped: busy/finished/hand-blocked")
+                return
+            }
             var capturePath = SystemInfo.getNextCapturePath()
             controller.imageCapture.captureToFile(capturePath)
         }

@@ -55,6 +55,17 @@ Item {
         transitionedFromStart = false
     }
 
+    function _normalizeImageSource(path) {
+        var p = String(path || "")
+        if (p === "")
+            return ""
+        if (p.startsWith("file:///") || p.startsWith("qrc:/") || p.startsWith("image://") || p.startsWith("data:"))
+            return p
+        if (/^[A-Za-z]:[\\/]/.test(p))
+            return "file:///" + p.replace(/\\/g, "/")
+        return p
+    }
+
     function _routeProps(target, payload) {
         var p = payload || {}
         var out = {}
@@ -138,6 +149,8 @@ Item {
         function onHwHandInGate() { uiCoordinator.handleHwHandInGate() }
         function onHwGateCleared() { uiCoordinator.handleHwGateCleared() }
         function onHwBinFull(binName) { uiCoordinator.handleHwBinFull(binName) }
+        function onHwBasketState(binName, isFull) { uiCoordinator.handleHwBasketState(binName, isFull) }
+        function onHwAcceptedItemRollback(itemType) { uiCoordinator.handleAcceptedItemRollback(itemType) }
         function onHwError(errorName, errorId) { uiCoordinator.handleHwError(errorName, errorId) }
     }
 
@@ -252,7 +265,10 @@ Item {
     Component {
         id: selectLanguageView
         SelectLanguageView {
-            onSelectLanguage: language => EventBus.navigate("enter_credentials", {"language": language})
+            onSelectLanguage: language => {
+                AppState.language = language
+                EventBus.navigate("enter_credentials", {"language": language})
+            }
         }
     }
 
@@ -305,7 +321,7 @@ Item {
                 console.log("[StateManager] bottom -> Camera by RecycleView.showCamera")
             }
             onShowCapture: imagePath => {
-                sm.captureImage.source = imagePath
+                sm.captureImage.source = sm._normalizeImageSource(imagePath)
                 sm.bottomView.currentIndex = MainWindow.BottomViewItem.CaptureImage
                 console.log("[StateManager] bottom -> Capture by RecycleView.showCapture")
             }

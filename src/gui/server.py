@@ -152,6 +152,7 @@ class Server(QObject):
         self._mlmodel_loaded = False
         self._mlmodel_loading = False
         self._ml_lock = threading.Lock()
+        self._ml_pending_captures: list[tuple[str, str]] = []  # (capturePath, phoneNumber) queued while model loads
 
         # SystemInfo singleton cache (for dev flag)
         self._system_info = None
@@ -192,7 +193,8 @@ class Server(QObject):
         if not self.server.listen(socket_path):
             self.logger.warning(f"IPC server failed to listen on {socket_path}: {self.server.errorString()}")
 
-        self.logger.info("Server initialized (ML model will be lazy-loaded)")
+        self._start_ml_preload()
+        self.logger.info("Server initialized (ML preload started in background)")
 
     # ==================== DEV MODE HELPERS ====================
 
@@ -222,6 +224,50 @@ class Server(QObject):
         if si is not None:
             return bool(getattr(si, "dev_mode", False))
         return os.environ.get("DROPME_DEV", "0") == "1"
+
+    def _start_ml_preload(self) -> None:
+        if self._should_skip_ml_in_dev():
+            self.logger.info("Dev mode enabled - skipping startup ML preload")
+            return
+
+        with self._ml_lock:
+            if self._mlmodel_loaded or self._mlmodel_loading:
+                return
+            self._mlmodel_loading = True
+
+        self.logger.info("Preloading ML model at startup in background...")
+        threading.Thread(target=self._preload_mlmodel_in_background, daemon=True).start()
+
+    def _preload_mlmodel_in_background(self) -> None:
+        try:
+            from gui.mlmodel import MLModel
+
+            model = MLModel(logger=self.logger)
+            self._mlmodel = model
+            self._mlmodel_loaded = True
+            self.logger.info("Startup ML preload completed successfully")
+            threading.Thread(target=model.warmup, daemon=True).start()
+            self.logger.info("ML warmup started in background")
+
+            # Drain any captures that arrived before the model was ready
+            with self._ml_lock:
+                pending = list(self._ml_pending_captures)
+                self._ml_pending_captures.clear()
+            if pending:
+                self.logger.info(f"ML model ready — draining {len(pending)} queued captures")
+                for cap_path, phone_num in pending:
+                    threading.Thread(
+                        target=self._runCapturePredictionInThread,
+                        args=(cap_path, phone_num),
+                        daemon=True,
+                    ).start()
+        except Exception as e:
+            self._mlmodel = None
+            self._mlmodel_loaded = False
+            self.logger.error(f"Startup ML preload failed: {e}")
+        finally:
+            with self._ml_lock:
+                self._mlmodel_loading = False
 
     def _should_skip_ml_in_dev(self) -> bool:
         """In --dev mode, skip ML inference and model loading unconditionally."""
@@ -405,6 +451,16 @@ class Server(QObject):
         except Exception as e:
             self.logger.error(f"Dev-mode upload failed: {e}")
 
+    @Slot(str)
+    def simulateDevPredictionResult(self, item_name: str) -> None:
+        """
+        Dev-mode slot: simulate an ML prediction result through the SAME
+        predictionReady signal that production uses. This ensures the QML
+        handler, coordinator, and AppState all run the same code path.
+        """
+        self.logger.info(f"[DEV_SIM] Simulating prediction result: {item_name}")
+        self.predictionReady.emit([item_name, ""], "", "")
+
     # ==================== PREDICTION ====================
 
     @Slot(str, str)
@@ -435,12 +491,19 @@ class Server(QObject):
         Ensures signal emission happens on the Qt main thread.
         (Qt can queue signals from threads, but this is safer and more predictable.)
         """
-        QTimer.singleShot(0, lambda: self.predictionReady.emit(result, capturePath, system_path))
+        QTimer.singleShot(0, self, lambda: self.predictionReady.emit(result, capturePath, system_path))
 
     def _runCapturePredictionInThread(self, capturePath: str, phoneNumber: str = "") -> None:
         system_path: Optional[str] = None
         try:
             if not self._ensure_mlmodel() or self._mlmodel is None:
+                # Check if the model is still loading (not a permanent failure)
+                with self._ml_lock:
+                    still_loading = self._mlmodel_loading and not self._mlmodel_loaded
+                    if still_loading:
+                        self._ml_pending_captures.append((capturePath, phoneNumber))
+                        self.logger.info(f"ML model still loading — queued capture for retry: {Path(capturePath).name}")
+                        return
                 self.logger.warning("ML model not available")
                 self._emit_prediction_ready_mainthread(["error", ""], capturePath, "")
                 return
@@ -462,15 +525,13 @@ class Server(QObject):
             qml_uri = ""
 
             if predictions:
-                from gui.mlmodel import Item, Decision
+                from gui.mlmodel import Decision, Item
 
-                has_hand = any(d.item == Item.HAND for d in predictions)
-                if has_hand:
-                    item = "hand"
-                else:
-                    accepted = [d for d in predictions if d.decision == Decision.ACCEPTED]
-                    if accepted:
-                        best = max(accepted, key=lambda d: d.confidence)
+                best = self._mlmodel.select_final_detection(predictions)
+                if best is not None:
+                    if best.item == Item.HAND:
+                        item = "hand"
+                    elif best.decision == Decision.ACCEPTED:
                         item = self._mlmodel.item_to_server_format.get(best.item, "other")
                     else:
                         item = "other"
@@ -481,7 +542,7 @@ class Server(QObject):
                         system_path = tf.name
                     with open(system_path, "wb") as f:
                         f.write(buffer.tobytes())
-                    qml_uri = f"file://{os.path.abspath(system_path)}"
+                    qml_uri = Path(system_path).resolve().as_uri()
 
             self.logger.info(f"Prediction result: {item}")
             self._emit_prediction_ready_mainthread([item, qml_uri], capturePath, system_path or "")

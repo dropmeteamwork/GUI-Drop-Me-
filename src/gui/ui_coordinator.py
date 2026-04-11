@@ -1,6 +1,6 @@
 ﻿from __future__ import annotations
 
-from PySide6.QtCore import QObject, Property, Signal, Slot
+from PySide6.QtCore import QObject, Property, QTimer, Signal, Slot
 from PySide6.QtQml import QmlElement
 
 from gui.logging import getLogger
@@ -38,6 +38,10 @@ class UiCoordinator(QObject):
         self.logger = getLogger("dropme.ui_coordinator")
         self._app_state: QObject | None = None
         self._serial: QObject | None = None
+        self._hand_popup_timer = QTimer(self)
+        self._hand_popup_timer.setSingleShot(True)
+        self._hand_popup_timer.setInterval(2000)
+        self._hand_popup_timer.timeout.connect(self._show_delayed_hand_popup)
 
     def _invoke(self, obj: QObject | None, method_name: str, *args) -> bool:
         if obj is None:
@@ -125,6 +129,7 @@ class UiCoordinator(QObject):
             self._invoke(self._app_state, "startRecycleSession")
 
         if route_name == "start":
+            self._invoke(self._serial, "sendSignOut")
             self._set_prop("shouldSignOut", False)
 
         self._invoke(self._app_state, "navigateTo", route_name, data)
@@ -174,18 +179,25 @@ class UiCoordinator(QObject):
 
     @Slot()
     def handleResetToStart(self) -> None:
+        self._invoke(self._serial, "sendSignOut")
         self._set_prop("shouldSignOut", False)
         self._invoke(self._app_state, "navigateTo", "start", {})
 
     @Slot()
     def handleHwHandInGate(self) -> None:
-        if self._get_bool("handInGate"):
+        if not self._get_bool("handInGate"):
+            self._set_prop("handInGate", True)
+        if not self._hand_popup_timer.isActive():
+            self._hand_popup_timer.start()
+
+    def _show_delayed_hand_popup(self) -> None:
+        if not self._get_bool("handInGate"):
             return
-        self._set_prop("handInGate", True)
-        self._invoke(self._app_state, "showPopup", "hands_and_close", {})
+        self._invoke(self._app_state, "showPopup", "hands", {})
 
     @Slot()
     def handleHwGateCleared(self) -> None:
+        self._hand_popup_timer.stop()
         self._set_prop("handInGate", False)
 
         active_popup = self._get_str("activePopup")
@@ -201,8 +213,32 @@ class UiCoordinator(QObject):
     def handleHwBinFull(self, bin_name: str) -> None:
         self._invoke(self._app_state, "markRecycleBinFull", str(bin_name or ""))
 
+    @Slot(str, bool)
+    def handleHwBasketState(self, bin_name: str, is_full: bool) -> None:
+        self._invoke(self._app_state, "setRecycleBinState", str(bin_name or ""), bool(is_full))
+
+    @Slot(str)
+    def handleAcceptedItemRollback(self, item_type: str) -> None:
+        normalized = str(item_type or "").strip().lower()
+        if normalized == "plastic":
+            self._invoke(self._app_state, "decrementRecyclePlastic")
+            return
+        if normalized in ("can", "aluminum"):
+            self._invoke(self._app_state, "decrementRecycleCans")
+            return
+
     @Slot(str, int)
-    def handleHwError(self, _error_name: str, _error_id: int) -> None:
+    def handleHwError(self, error_name: str, _error_id: int) -> None:
+        critical_errors = {
+            "CONNECTION_LOST",
+            "MCU_ERROR",
+            "NACK",
+            "GATE_OPEN_TIMEOUT",
+        }
+        if str(error_name or "") not in critical_errors:
+            self.logger.info(f"Ignoring non-critical hardware error for popup: {error_name}")
+            return
+        self._invoke(self._serial, "sendSignOut")
         self._invoke(self._app_state, "showPopup", "out_of_service", {})
 
     @Slot()
@@ -210,6 +246,7 @@ class UiCoordinator(QObject):
         if self._get_bool("handInGate"):
             self._set_prop("shouldSignOut", True)
             return
+        self._invoke(self._serial, "sendSignOut")
         self._set_prop("shouldSignOut", False)
         self._invoke(self._app_state, "navigateTo", "start", {})
 

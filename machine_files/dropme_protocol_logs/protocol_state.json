@@ -13,13 +13,13 @@
     },
     "ACK": {
       "cmd": 160,
-      "direction": "",
-      "payload": null
+      "direction": "RX",
+      "payload": 19279
     },
     "BASKET_STATUS": {
       "cmd": 115,
-      "direction": "",
-      "payload": null
+      "direction": "RX",
+      "payload": 7
     },
     "BUZZER_BEEP": {
       "cmd": 81,
@@ -28,13 +28,13 @@
     },
     "DATA": {
       "cmd": 162,
-      "direction": "",
-      "payload": null
+      "direction": "RX",
+      "payload": 266
     },
     "END_SESSION": {
       "cmd": 100,
-      "direction": "",
-      "payload": null
+      "direction": "TX",
+      "payload": 0
     },
     "ERROR": {
       "cmd": 163,
@@ -53,8 +53,8 @@
     },
     "ITEM_PLACED": {
       "cmd": 113,
-      "direction": "",
-      "payload": null
+      "direction": "RX",
+      "payload": 10247
     },
     "NACK": {
       "cmd": 161,
@@ -63,18 +63,18 @@
     },
     "PING": {
       "cmd": 1,
-      "direction": "",
-      "payload": null
+      "direction": "TX",
+      "payload": 0
     },
     "POLL_WEIGHT": {
       "cmd": 18,
-      "direction": "",
-      "payload": null
+      "direction": "TX",
+      "payload": 0
     },
     "READ_SENSOR": {
       "cmd": 17,
-      "direction": "",
-      "payload": null
+      "direction": "TX",
+      "payload": 10
     },
     "REJECT_ITEM": {
       "cmd": 99,
@@ -93,8 +93,8 @@
     },
     "START_SESSION": {
       "cmd": 97,
-      "direction": "",
-      "payload": null
+      "direction": "TX",
+      "payload": 0
     },
     "STATUS_OK": {
       "cmd": 112,
@@ -108,15 +108,15 @@
     }
   },
   "connection": {
-    "connected": false,
-    "last_disconnect_ts": "",
-    "last_rx_raw": "",
-    "last_rx_seq": null,
-    "last_rx_ts": "",
-    "last_tx_raw": "",
-    "last_tx_seq": null,
-    "last_tx_ts": "",
-    "port": ""
+    "connected": true,
+    "last_disconnect_ts": "2026-04-08T11:16:51-07:00",
+    "last_rx_raw": "aa a0 02 4f 4b cb df",
+    "last_rx_seq": 0,
+    "last_rx_ts": "2026-04-08T11:18:50-07:00",
+    "last_tx_raw": "aa 01 00 50 70",
+    "last_tx_seq": 74,
+    "last_tx_ts": "2026-04-08T11:18:50-07:00",
+    "port": "COM4"
   },
   "errors": {
     "last_direction": "",
@@ -124,7 +124,7 @@
     "last_error_payload": 0,
     "last_update": ""
   },
-  "machine_name": "RVM-001",
+  "machine_name": "maadi_club",
   "motion": {
     "gate_blocked": false,
     "gate_open": false,
@@ -135,28 +135,28 @@
   },
   "operation": {
     "active": false,
-    "last_cmd": "",
-    "last_direction": "",
+    "last_cmd": "END_SESSION",
+    "last_direction": "TX",
     "last_payload": 0,
-    "last_update": ""
+    "last_update": "2026-04-08T11:16:31-07:00"
   },
   "schema_version": 1,
   "sensor": {
     "bin_can_full": false,
     "bin_plastic_full": false,
     "bin_reject_full": false,
-    "last_cmd": "",
-    "last_direction": "",
-    "last_payload": 0,
-    "last_update": "",
+    "last_cmd": "READ_SENSOR",
+    "last_direction": "TX",
+    "last_payload": 10,
+    "last_update": "2026-04-08T11:17:00-07:00",
     "weight_grams": null
   },
   "system_status": {
-    "last_cmd": "",
-    "last_direction": "",
-    "last_payload": 0,
-    "last_update": "",
-    "state": "unknown"
+    "last_cmd": "ACK",
+    "last_direction": "RX",
+    "last_payload": 19279,
+    "last_update": "2026-04-08T11:18:50-07:00",
+    "state": "ack"
   },
-  "updated_at": "2026-04-11T01:23:50+02:00"
+  "updated_at": "2026-04-08T11:18:50-07:00"
 }

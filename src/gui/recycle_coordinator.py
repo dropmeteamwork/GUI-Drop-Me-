@@ -104,6 +104,11 @@ class RecycleCoordinator(QObject):
     @Slot(str)
     def _on_hardware_request(self, action: str) -> None:
         action_name = str(action or "")
+        if action_name in {"can", "plastic", "other"}:
+            allowed = self._invoke(self._serial, "isDetectionAllowed")
+            if allowed is not None and not bool(allowed):
+                self.logger.info(f"Blocked hardware action while gate alarm/hand block is active: {action_name}")
+                return
         if action_name == "can":
             if self._invoke(self._serial, "sendCan"):
                 self.itemProcessingStarted.emit()
@@ -113,7 +118,8 @@ class RecycleCoordinator(QObject):
                 self.itemProcessingStarted.emit()
             return
         if action_name == "other":
-            self._invoke(self._serial, "sendOther")
+            if self._invoke(self._serial, "sendOther"):
+                self.itemProcessingStarted.emit()
             return
         self.logger.warning(f"Unknown hardware action: {action_name}")
 

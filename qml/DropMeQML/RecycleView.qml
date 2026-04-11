@@ -158,6 +158,35 @@ Item {
                         onPressed: flowController.simulateDevPrediction("other")
                     }
 
+                    Button {
+                        text: SystemInfo.devLocalSensorOverride ? "sensor: hand block" : "sensor: hand block (sim only)"
+                        width: parent.width
+                        enabled: SystemInfo.devLocalSensorOverride
+                        palette.buttonText: "black"
+                        onPressed: Global.serial.devSetGateAlarmBlocked(true)
+                    }
+                    Button {
+                        text: SystemInfo.devLocalSensorOverride ? "sensor: hand clear" : "sensor: hand clear (sim only)"
+                        width: parent.width
+                        enabled: SystemInfo.devLocalSensorOverride
+                        palette.buttonText: "black"
+                        onPressed: Global.serial.devSetGateAlarmBlocked(false)
+                    }
+                    Button {
+                        text: SystemInfo.devLocalSensorOverride ? "sensor: exit passed" : "sensor: exit passed (sim only)"
+                        width: parent.width
+                        enabled: SystemInfo.devLocalSensorOverride
+                        palette.buttonText: "black"
+                        onPressed: Global.serial.devSetExitGatePassed(true)
+                    }
+                    Button {
+                        text: SystemInfo.devLocalSensorOverride ? "sensor: exit clear" : "sensor: exit clear (sim only)"
+                        width: parent.width
+                        enabled: SystemInfo.devLocalSensorOverride
+                        palette.buttonText: "black"
+                        onPressed: Global.serial.devSetExitGatePassed(false)
+                    }
+
                 }
             }
         }

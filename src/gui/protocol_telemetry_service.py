@@ -25,6 +25,7 @@ class ProtocolTelemetryService:
         self.sensor_events_file = self.log_dir / "sensor_events.jsonl"
         self.sensor_snapshot_file = self.log_dir / "sensor_snapshot.json"
         self.protocol_state_file = self.log_dir / "protocol_state.json"
+        self.session_events_file = self.log_dir / "session_events.csv"
 
         self._protocol_state = self._build_initial_protocol_state()
         self._protocol_state_serialized = ""
@@ -32,6 +33,7 @@ class ProtocolTelemetryService:
     def initialize(self) -> None:
         self._init_weights_log()
         self._init_sensor_logs()
+        self._init_session_events_log()
         self.write_protocol_state_if_changed(force=True)
 
     def log_weight(self, weight_grams: int, session_id: str | None, port_name: str | None) -> None:
@@ -60,6 +62,46 @@ class ProtocolTelemetryService:
                 f.write("\n")
         except Exception as exc:
             self.logger.warning(f"Protocol log failed: {exc}")
+
+    def log_session_event(
+        self,
+        *,
+        session_id: str | None,
+        stage: str,
+        direction: str,
+        event_name: str,
+        raw_hex: str = "",
+        crc_valid: bool | None = None,
+        payload_summary: str = "",
+        prediction: str = "",
+        confidence: float | None = None,
+        weight_grams: int | None = None,
+        sensors: dict[str, Any] | None = None,
+        note: str = "",
+    ) -> None:
+        try:
+            self.log_dir.mkdir(parents=True, exist_ok=True)
+            sensors_json = json.dumps(sensors or {}, ensure_ascii=False, sort_keys=True)
+            with self.session_events_file.open("a", newline="", encoding="utf-8") as f:
+                csv.writer(f).writerow(
+                    [
+                        self._now_iso(),
+                        session_id or "",
+                        str(stage),
+                        str(direction),
+                        str(event_name),
+                        str(raw_hex),
+                        "" if crc_valid is None else int(bool(crc_valid)),
+                        str(payload_summary),
+                        str(prediction),
+                        "" if confidence is None else float(confidence),
+                        "" if weight_grams is None else int(weight_grams),
+                        sensors_json,
+                        str(note),
+                    ]
+                )
+        except Exception as exc:
+            self.logger.warning(f"Session event log failed: {exc}")
 
     def write_sensor_snapshot(self, snapshot: dict[str, Any]) -> None:
         try:
@@ -114,7 +156,7 @@ class ProtocolTelemetryService:
     ) -> None:
         ts = self._now_iso()
         cmd = int(frame.cmd)
-        payload = int(frame.payload)
+        payload = mcu.payload_to_int(frame.payload)
         cmd_name = mcu.get_command_name(cmd)
         group = self._cmd_group(cmd)
 
@@ -124,11 +166,11 @@ class ProtocolTelemetryService:
 
         if direction == "RX":
             conn["last_rx_ts"] = ts
-            conn["last_rx_seq"] = int(frame.seq)
+            conn["last_rx_seq"] = int(frame.seq) if frame.seq is not None else None
             conn["last_rx_raw"] = raw.hex(" ")
         else:
             conn["last_tx_ts"] = ts
-            conn["last_tx_seq"] = int(frame.seq)
+            conn["last_tx_seq"] = int(frame.seq) if frame.seq is not None else None
             conn["last_tx_raw"] = raw.hex(" ")
 
         self._protocol_state["commands"][cmd_name] = {
@@ -149,37 +191,17 @@ class ProtocolTelemetryService:
                 section["last_direction"] = direction
                 section["last_update"] = ts
 
-        if cmd == mcu.StatusFeedback.SYS_READY:
+        if cmd == mcu.ResponseCode.ACK:
+            self._protocol_state["system_status"]["state"] = "ack"
+        elif cmd == mcu.AsyncEvent.STATUS_OK:
             self._protocol_state["system_status"]["state"] = "ready"
-        elif cmd == mcu.StatusFeedback.SYS_BUSY:
-            self._protocol_state["system_status"]["state"] = "busy"
-        elif cmd == mcu.StatusFeedback.SYS_IDLE:
-            self._protocol_state["system_status"]["state"] = "idle"
 
-        if cmd == mcu.OperationControl.OP_NEW and direction == "TX":
+        if cmd == mcu.SessionControl.START_SESSION and direction == "TX":
             self._protocol_state["operation"]["active"] = True
-        elif cmd in (mcu.OperationControl.OP_CANCEL, mcu.OperationControl.OP_END) and direction == "TX":
+        elif cmd in (mcu.SystemControl.SYSTEM_RESET, mcu.SessionControl.END_SESSION) and direction == "TX":
             self._protocol_state["operation"]["active"] = False
 
-        if cmd == mcu.StatusFeedback.GATE_OPENED:
-            self._protocol_state["motion"]["gate_open"] = True
-            self._protocol_state["motion"]["gate_blocked"] = False
-        elif cmd == mcu.StatusFeedback.GATE_CLOSED:
-            self._protocol_state["motion"]["gate_open"] = False
-            self._protocol_state["motion"]["gate_blocked"] = False
-        elif cmd == mcu.StatusFeedback.GATE_BLOCKED:
-            self._protocol_state["motion"]["gate_blocked"] = True
-
-        if cmd == mcu.SensorData.WEIGHT_DATA:
-            self._protocol_state["sensor"]["weight_grams"] = payload
-        elif cmd == mcu.SensorData.BIN_PLASTIC_FULL:
-            self._protocol_state["sensor"]["bin_plastic_full"] = True
-        elif cmd == mcu.SensorData.BIN_CAN_FULL:
-            self._protocol_state["sensor"]["bin_can_full"] = True
-        elif cmd == mcu.SensorData.BIN_REJECT_FULL:
-            self._protocol_state["sensor"]["bin_reject_full"] = True
-
-        if 0xF0 <= cmd <= 0xFF:
+        if cmd == mcu.ResponseCode.ERROR or cmd == mcu.ResponseCode.NACK:
             self._protocol_state["errors"]["last_error_cmd"] = cmd_name
             self._protocol_state["errors"]["last_error_payload"] = payload
             self._protocol_state["errors"]["last_direction"] = direction
@@ -226,6 +248,31 @@ class ProtocolTelemetryService:
         except Exception as exc:
             self.logger.warning(f"Failed to init sensor logs: {exc}")
 
+    def _init_session_events_log(self) -> None:
+        try:
+            self.log_dir.mkdir(parents=True, exist_ok=True)
+            if not self.session_events_file.exists():
+                with self.session_events_file.open("w", newline="", encoding="utf-8") as f:
+                    csv.writer(f).writerow(
+                        [
+                            "timestamp",
+                            "session_id",
+                            "stage",
+                            "direction",
+                            "event_name",
+                            "raw_hex",
+                            "crc_valid",
+                            "payload_summary",
+                            "prediction",
+                            "confidence",
+                            "weight_grams",
+                            "sensors_json",
+                            "note",
+                        ]
+                    )
+        except Exception as exc:
+            self.logger.warning(f"Failed to init session events log: {exc}")
+
     def _now_iso(self) -> str:
         return datetime.now().astimezone().isoformat(timespec="seconds")
 
@@ -233,12 +280,11 @@ class ProtocolTelemetryService:
         commands: dict[str, dict[str, Any]] = {}
         for enum_class in (
             mcu.SystemControl,
-            mcu.OperationControl,
-            mcu.MotionControl,
-            mcu.Classification,
-            mcu.StatusFeedback,
-            mcu.SensorData,
-            mcu.ErrorFault,
+            mcu.ReadCommand,
+            mcu.DeviceControl,
+            mcu.SessionControl,
+            mcu.AsyncEvent,
+            mcu.ResponseCode,
         ):
             for item in enum_class:
                 commands[item.name] = {"cmd": int(item.value), "payload": None, "direction": ""}
@@ -297,17 +343,15 @@ class ProtocolTelemetryService:
         return json.dumps(stable, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
     def _cmd_group(self, cmd: int) -> str:
-        if 0x01 <= cmd <= 0x0F or 0x40 <= cmd <= 0x5F:
+        if 0x01 <= cmd <= 0x0F or 0x70 <= cmd <= 0x7F or 0xA0 <= cmd <= 0xAF:
             return "system_status"
         if 0x10 <= cmd <= 0x1F:
-            return "operation"
-        if 0x20 <= cmd <= 0x2F:
-            return "motion"
-        if 0x30 <= cmd <= 0x3F:
-            return "classification"
-        if 0xE0 <= cmd <= 0xEF:
             return "sensor"
-        if 0xF0 <= cmd <= 0xFF:
+        if 0x50 <= cmd <= 0x5F:
+            return "motion"
+        if 0x60 <= cmd <= 0x6F:
+            return "operation"
+        if cmd in (int(mcu.ResponseCode.NACK), int(mcu.ResponseCode.ERROR)):
             return "errors"
         return ""
 

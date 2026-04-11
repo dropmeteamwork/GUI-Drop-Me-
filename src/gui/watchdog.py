@@ -31,7 +31,7 @@ class Watchdog(QObject):
         self._app_state: QObject | None = None
         self._enabled = True
 
-        self._ui_timeout_sec = float(8)
+        self._ui_timeout_sec = float(15)
         self._serial_timeout_sec = float(20)
         self._recovery_cooldown_sec = float(10)
 
@@ -62,6 +62,10 @@ class Watchdog(QObject):
 
     def _is_serial_connected(self) -> bool:
         result = self._invoke(self._serial, "isConnected")
+        return bool(result)
+
+    def _is_startup_settling(self) -> bool:
+        result = self._invoke(self._serial, "isStartupSettling")
         return bool(result)
 
     def _attempt_recovery(self, reason: str) -> None:
@@ -110,6 +114,8 @@ class Watchdog(QObject):
                 self._clear_alert("SERIAL_DISCONNECTED_TIMEOUT")
             self._last_serial_seen = now
         else:
+            if self._is_startup_settling():
+                return
             disconnected_too_long = (now - self._last_serial_seen) > self._serial_timeout_sec
             if disconnected_too_long and not self._serial_alert_active:
                 self._serial_alert_active = True

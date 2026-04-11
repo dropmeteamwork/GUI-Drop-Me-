@@ -138,6 +138,17 @@ def test_show_popup_validates_key():
     assert len(app.calls) == before
 
 
+def test_gate_alarm_shows_remove_hand_popup():
+    app = FakeAppState()
+    ui = UiCoordinator()
+    ui.appState = app
+
+    ui.handleHwHandInGate()
+
+    assert app.handInGate is True
+    assert ("showPopup", "hands", {}) in app.calls
+
+
 def test_hw_gate_cleared_with_deferred_signout():
     app = FakeAppState()
     serial = FakeSerial()

@@ -75,13 +75,14 @@ class Config:
     # Per-class ACCEPTANCE thresholds (applied in decision logic)
     # Class IDs: 0=PLASTIC, 1=HAND, 2=CRUSHED_PLASTIC, 3=ALUMINUM, 4=CRUSHED_ALUMINUM
     CLASS_ACCEPT_THRESHOLDS = {
-        0: 0.70,  # PLASTIC - must be 90%+ confident
+        0: 0.40,  # PLASTIC - must be 90%+ confident
         1: 0.10,  # HAND - lower threshold to catch hands reliably
-        2: 0.20,  # CRUSHED_PLASTIC
-        3: 0.70,  # ALUMINUM - must be 80%+ confident
-        4: 0.20,  # CRUSHED_ALUMINUM
+        2: 0.50,  # CRUSHED_PLASTIC
+        3: 0.40,  # ALUMINUM - must be 80%+ confident
+        4: 0.50,  # CRUSHED_ALUMINUM
     }
     DEFAULT_CLASS_THRESHOLD = 0.70
+    HAND_OVERRIDE_THRESHOLD = float(os.getenv('HAND_OVERRIDE_THRESHOLD', '0.4'))
 
     CLASSIFIER_CONF_THRESHOLD = float(os.getenv('CLASSIFIER_CONF_THRESHOLD', '0.6'))
     CLASSIFIER_REJECT_THRESHOLD = float(os.getenv('CLASSIFIER_REJECT_THRESHOLD', '0.6'))
@@ -525,6 +526,23 @@ class MLModel:
         return processed
 
     # Helper methods
+    def select_final_detection(self, dets: List[Detection]) -> Optional[Detection]:
+        if not dets:
+            return None
+
+        hand_candidates = [
+            d for d in dets
+            if d.item == Item.HAND and d.confidence >= Config.HAND_OVERRIDE_THRESHOLD
+        ]
+        if hand_candidates:
+            return max(hand_candidates, key=lambda d: d.confidence)
+
+        non_hand = [d for d in dets if d.item != Item.HAND]
+        if non_hand:
+            return max(non_hand, key=lambda d: d.confidence)
+
+        return max(dets, key=lambda d: d.confidence)
+
     def _crop(self, image: np.ndarray, bbox: Tuple[int, int, int, int]) -> np.ndarray:
         h, w = image.shape[:2]
         x1, y1, x2, y2 = bbox
@@ -739,8 +757,9 @@ class MLModel:
             t0 = time.perf_counter()
             annotated = img.copy()
             if dets:
-                for d in dets:
-                    annotated = self._annotate(annotated, d)
+                final_det = self.select_final_detection(dets)
+                if final_det is not None:
+                    annotated = self._annotate(annotated, final_det)
             else:
                 cv2.putText(
                     annotated,
@@ -767,7 +786,9 @@ class MLModel:
             # 5) Queue AWS upload (non-blocking) with timings included
             #if dets and self.aws_uploader.s3_client is not None and buffer is not None:
             if dets and buffer is not None:
-                best = max(dets, key=lambda d: d.confidence)
+                best = self.select_final_detection(dets)
+                if best is None:
+                    return dets, buffer
                 item_str = self.item_to_server_format[best.item]
                 decision_str = best.decision.value
 
@@ -928,10 +949,18 @@ class MLModel:
             dtype=np.uint8
         )
 
-        dummy_path = "/tmp/dropme_warmup.jpg"
+        temp_file = None
+        dummy_path = ""
         try:
+            import tempfile
+
+            temp_file = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+            dummy_path = temp_file.name
+            temp_file.close()
+
             # Write dummy image to disk so predict() follows the real path
-            cv2.imwrite(dummy_path, dummy_img)
+            if not cv2.imwrite(dummy_path, dummy_img):
+                raise RuntimeError(f"Failed to write warmup image to {dummy_path}")
 
             # Temporarily disable AWS uploads during warmup
             aws_client_backup = getattr(self.aws_uploader, "s3_client", None)
@@ -950,7 +979,7 @@ class MLModel:
             self.logger.error(f"Warmup failed: {e}", exc_info=True)
         finally:
             try:
-                if os.path.exists(dummy_path):
+                if dummy_path and os.path.exists(dummy_path):
                     os.remove(dummy_path)
             except OSError:
                 pass

@@ -66,6 +66,7 @@ class SystemInfo(QObject):
         self.machine_id = self._load_or_create_machine_id()
 
         self.dev_mode = False
+        self._dev_local_sensor_override = str(os.environ.get("DROPME_DEV_LOCAL_SENSOR_OVERRIDE", "0")).strip().lower() in ("1", "true", "yes", "on")
 
     def _load_or_create_machine_id(self) -> QByteArray:
         path = self.data_dir.filePath(MACHINE_ID_FILENAME)
@@ -137,3 +138,7 @@ class SystemInfo(QObject):
             self.devModeChanged.emit()
 
     dev = Property(bool, _get_dev, _set_dev, notify=devModeChanged)
+
+    @Property(bool, constant=True)
+    def devLocalSensorOverride(self) -> bool:
+        return self._dev_local_sensor_override

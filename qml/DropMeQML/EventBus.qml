@@ -11,6 +11,8 @@ QtObject {
     signal hwHandInGate()
     signal hwGateCleared()
     signal hwBinFull(string binName)
+    signal hwBasketState(string binName, bool isFull)
+    signal hwAcceptedItemRollback(string itemType)
     signal hwError(string errorName, int errorId)
 
     // Optional: simple publish helper (nice for consistency)

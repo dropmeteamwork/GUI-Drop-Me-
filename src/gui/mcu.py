@@ -1,263 +1,371 @@
 """
-DropMe Serial Communication Protocol - MCU Interface
-Protocol Version: 1.0 (as per Serial_Command_Protocol.pdf)
+DropMe Serial Communication Protocol - MCU Interface.
 
-FLOW SPECIFICATION:
-==================
+Authoritative wire format:
+    START (0xAA) | MSG_ID | LEN | PAYLOAD... | CRC_L | CRC_H
 
-1. SYSTEM CONTROL:
-   - SYS_PING: Periodic (every 10s), response = SYS_IDLE or SYS_BUSY
-   - SYS_INIT: On system startup, response = SYS_READY
-   - SYS_RESET: After ERR_GATE_TIMEOUT/ERR_MOTOR_STALL/ERR_SENSOR_FAIL, response = SYS_READY
-   - SYS_STOP_ALL: Emergency (keep for future use)
-
-2. USER FLOW:
-   - User starts → selects language → PC sends OP_NEW
-   - Cancel on numpad OR QR timeout (20s) → OP_CANCEL then SYS_RESET → back to main
-   - Valid credentials → GATE_OPEN → MCU responds GATE_OPENED
-
-3. RECYCLING FLOW:
-   - User inserts item
-   - GATE_BLOCKED check (async from MCU) - if blocked, show popup, DON'T process
-   - If not blocked:
-     * WEIGHT_DATA is received (log it, can be used by ML)
-     * ML detects item:
-       - ACCEPTED (plastic/can): CONVEYOR_RUN(50=5s) → wait CONVEYOR_DONE → SORT_SET → ITEM_ACCEPT → SORT_DONE
-       - REJECTED: REJECT_ACTIVATE → wait REJECT_DONE → REJECT_HOME → wait REJECT_HOME_OK → ITEM_REJECT
-
-4. END SESSION:
-   - User presses End → OP_END
-   - PC sends GATE_CLOSE
-   - If GATE_BLOCKED during close → stop, wait for clear, retry
-   - Response: GATE_CLOSED
-
-5. BIN MONITORING:
-   - BIN_PLASTIC_FULL, BIN_CAN_FULL, BIN_REJECT_FULL
-   - Log to file, poll every 12 hours
-
-Frame Format:
-    SOF (0xAA) | SEQ (1 Byte) | CMD (1 Byte) | PAYLOAD (1 Byte) | CRC (2 Bytes)
+CRC:
+    CRC16/Modbus over the entire frame prefix before the CRC bytes:
+    START + MSG_ID + LEN + PAYLOAD
 """
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Optional
+from typing import Iterable
 
 
-# Protocol Constants
-SOF = 0xAA
-FRAME_SIZE = 6
-CRC_POLY = 0x1021
+START_BYTE = 0xAA
+SOF = START_BYTE
+MIN_FRAME_SIZE = 5
+CRC_POLY = 0xA001
 CRC_INIT = 0xFFFF
-BAUD_RATE = 9600
+BAUD_RATE = 115200
 
 
 class SystemControl(IntEnum):
-    """PC → MCU: System Control Commands (0x01-0x0F)"""
-    SYS_INIT = 0x01      # On startup → response: SYS_READY
-    SYS_RESET = 0x02     # After errors → response: SYS_READY
-    SYS_PING = 0x03      # Periodic (10s) → response: SYS_IDLE or SYS_BUSY
-    SYS_STOP_ALL = 0x04  # Emergency stop (future use)
+    PING = 0x01
+    GET_MCU_STATUS = 0x02
+    SYSTEM_RESET = 0x03
+
+    SYS_PING = PING
+    SYS_RESET = SYSTEM_RESET
 
 
-class OperationControl(IntEnum):
-    """PC → MCU: Operation Control Commands (0x10-0x1F)"""
-    OP_NEW = 0x10     # After language selection → response: SYS_READY
-    OP_CANCEL = 0x11  # Cancel before recycling starts → then SYS_RESET
-    OP_END = 0x12     # User presses End → then GATE_CLOSE
+class ReadCommand(IntEnum):
+    READ_SENSOR = 0x11
+    POLL_WEIGHT = 0x12
 
 
-class MotionControl(IntEnum):
-    """PC → MCU: Motion Control Commands (0x20-0x2F)"""
-    GATE_OPEN = 0x20       # After valid credentials → response: GATE_OPENED
-    GATE_CLOSE = 0x21      # After OP_END (only if not blocked) → response: GATE_CLOSED
-    CONVEYOR_RUN = 0x22    # For accepted items (payload × 100ms) → response: CONVEYOR_DONE
-    CONVEYOR_STOP = 0x23   # Stop conveyor → response: CONVEYOR_DONE
-    REJECT_ACTIVATE = 0x24 # For rejected items → response: REJECT_DONE
-    REJECT_HOME = 0x25     # Return reject arm → response: REJECT_HOME_OK
-    SORT_SET = 0x26        # Set sort path (0x01=plastic, 0x02=can) → response: SORT_DONE
+class DeviceControl(IntEnum):
+    RING_LIGHT = 0x50
+    BUZZER_BEEP = 0x51
 
 
-class Classification(IntEnum):
-    """PC → MCU: Decision/Classification Commands (0x30-0x3F)"""
-    ITEM_ACCEPT = 0x30  # Accept item (payload: 0x01=plastic, 0x02=can)
-    ITEM_REJECT = 0x31  # Reject the item
+class SessionControl(IntEnum):
+    REQUEST_SEQUENCE_STATUS = 0x60
+    START_SESSION = 0x61
+    ACCEPT_ITEM = 0x62
+    REJECT_ITEM = 0x63
+    END_SESSION = 0x64
 
 
-class StatusFeedback(IntEnum):
-    """MCU → PC: Status & Feedback Messages (0x40-0x5F)"""
-    SYS_READY = 0x40      # System ready (response to SYS_INIT, SYS_RESET, OP_NEW)
-    SYS_BUSY = 0x41       # System busy (response to SYS_PING when busy)
-    SYS_IDLE = 0x42       # System idle (response to SYS_PING when idle)
-    GATE_OPENED = 0x43    # Gate opened (response to GATE_OPEN)
-    GATE_CLOSED = 0x44    # Gate closed (response to GATE_CLOSE)
-    GATE_BLOCKED = 0x45   # Obstruction detected (ASYNC - can come anytime!)
-    CONVEYOR_DONE = 0x46  # Conveyor finished (response to CONVEYOR_RUN/STOP)
-    SORT_DONE = 0x47      # Sorting complete (response to SORT_SET, ITEM_ACCEPT)
-    REJECT_DONE = 0x48    # Rejection complete (response to REJECT_ACTIVATE)
-    REJECT_HOME_OK = 0x49 # Reject arm home (response to REJECT_HOME)
+class AsyncEvent(IntEnum):
+    STATUS_OK = 0x70
+    ITEM_PLACED = 0x71
+    ITEM_DROPPED = 0x72
+    BASKET_STATUS = 0x73
 
 
-class SensorData(IntEnum):
-    """MCU → PC: Sensor Data Messages (0xE0-0xEF) - ASYNC"""
-    WEIGHT_DATA = 0xE0       # Item weight (0-255 grams) - log and pass to ML
-    BIN_PLASTIC_FULL = 0xE1  # Plastic bin full - log, poll every 12h
-    BIN_CAN_FULL = 0xE2      # Can bin full - log, poll every 12h
-    BIN_REJECT_FULL = 0xE3   # Reject bin full - log, poll every 12h
+class ResponseCode(IntEnum):
+    ACK = 0xA0
+    NACK = 0xA1
+    DATA = 0xA2
+    ERROR = 0xA3
 
 
-class ErrorFault(IntEnum):
-    """MCU → PC: Error & Fault Messages (0xF0-0xFF) - triggers SYS_RESET"""
-    ERR_GATE_TIMEOUT = 0xF0  # Gate timeout → send SYS_RESET
-    ERR_MOTOR_STALL = 0xF1   # Motor stall → send SYS_RESET
-    ERR_SENSOR_FAIL = 0xF2   # Sensor fail → send SYS_RESET
-    ERR_BIN_FULL = 0xF3      # Bin full error (future use)
+class SensorSelector(IntEnum):
+    SORT_PLASTIC = 0x00
+    SORT_ALUMINUM = 0x01
+    GATE_CLOSED = 0x02
+    GATE_OPENED = 0x03
+    EXIT_GATE = 0x04
+    GATE_ALARM = 0x05
+    REJECT_HOME = 0x06
+    DROP_SENSOR = 0x07
+    BASKET_1 = 0x08
+    BASKET_2 = 0x09
+    BASKET_3 = 0x0A
+
+
+class RingLightColor(IntEnum):
+    OFF = 0x00
+    RED = 0x01
+    GREEN = 0x02
+    BLUE = 0x03
+    YELLOW = 0x04
+    CYAN = 0x05
+    MAGENTA = 0x06
+    WHITE = 0x07
+
+
+class BuzzerPattern(IntEnum):
+    SINGLE = 0x01
+    DOUBLE = 0x02
+    LONG = 0x03
 
 
 class ItemType(IntEnum):
-    """Payload values for sorting and classification"""
-    PLASTIC = 0x01
-    CAN = 0x02
+    PLASTIC = 0x00
+    ALUMINUM = 0x01
+    CAN = ALUMINUM
 
 
 class BinID(IntEnum):
-    """Bin identifiers"""
     PLASTIC = 0x01
     CAN = 0x02
     REJECT = 0x03
 
 
-# Timing constants (in payload units: value × 100ms)
-CONVEYOR_TIME_ACCEPT = 50   # 5 seconds for accepted items
-REJECT_TIME = 30            # 3 seconds for rejection
+def normalize_payload(payload: int | bytes | bytearray | Iterable[int] | None = None) -> bytes:
+    if payload is None:
+        return b""
+    if isinstance(payload, int):
+        return bytes([payload & 0xFF])
+    if isinstance(payload, bytes):
+        return payload
+    if isinstance(payload, bytearray):
+        return bytes(payload)
+    return bytes(int(part) & 0xFF for part in payload)
 
 
-def calculate_crc(data: list) -> int:
-    """
-    Calculate CRC-16 CCITT as per protocol specification.
-    """
+def payload_to_int(payload: int | bytes | bytearray | None, default: int = 0) -> int:
+    if payload is None:
+        return default
+    if isinstance(payload, int):
+        return payload
+    if len(payload) == 0:
+        return default
+    if len(payload) == 1:
+        return int(payload[0])
+    return int.from_bytes(bytes(payload), "little", signed=False)
+
+
+def calculate_crc(data: Iterable[int]) -> int:
     crc = CRC_INIT
     for byte in data:
-        crc ^= (byte << 8)
+        crc ^= int(byte) & 0xFF
         for _ in range(8):
-            if crc & 0x8000:
-                crc = (crc << 1) ^ CRC_POLY
+            if crc & 0x0001:
+                crc = (crc >> 1) ^ CRC_POLY
             else:
-                crc <<= 1
+                crc >>= 1
             crc &= 0xFFFF
     return crc
 
 
+def build_frame_bytes(cmd: int, payload: int | bytes | bytearray | Iterable[int] | None = None) -> bytes:
+    payload_bytes = normalize_payload(payload)
+    frame_prefix = bytes([START_BYTE, int(cmd) & 0xFF, len(payload_bytes) & 0xFF, *payload_bytes])
+    crc = calculate_crc(frame_prefix)
+    return frame_prefix + bytes([crc & 0xFF, (crc >> 8) & 0xFF])
+
+
+def reference_tx_bytes(cmd: int, payload: int | bytes | bytearray | Iterable[int] | None = None) -> bytes | None:
+    return build_frame_bytes(cmd, payload)
+
+
+def is_reference_request(cmd: int, payload: int | bytes | bytearray | Iterable[int] | None = None) -> bool:
+    return True
+
+
+def matches_reference_request_bytes(
+    cmd: int,
+    payload: int | bytes | bytearray | Iterable[int] | None,
+    raw: bytes,
+) -> bool:
+    return bytes(raw) == build_frame_bytes(cmd, payload)
+
+
+def parse_reference_request_bytes(data: bytes) -> tuple[int, bytes] | None:
+    frame = Frame.from_bytes(data)
+    if frame is None:
+        return None
+    return int(frame.cmd), bytes(frame.payload)
+
+
+def validate_frame_bytes(data: bytes) -> bool:
+    if len(data) < MIN_FRAME_SIZE:
+        return False
+    if data[0] != START_BYTE:
+        return False
+    payload_len = data[2]
+    expected_size = 1 + 1 + 1 + payload_len + 2
+    if len(data) != expected_size:
+        return False
+    crc_received = data[-2] | (data[-1] << 8)
+    crc_calculated = calculate_crc(data[:-2])
+    return crc_received == crc_calculated
+
+
 def get_command_name(cmd: int) -> str:
-    """Get human-readable command name for logging."""
-    for enum_class in [SystemControl, OperationControl, MotionControl, 
-                       Classification, StatusFeedback, SensorData, ErrorFault]:
+    for enum_class in [
+        SystemControl,
+        ReadCommand,
+        DeviceControl,
+        SessionControl,
+        AsyncEvent,
+        ResponseCode,
+    ]:
         try:
             return enum_class(cmd).name
         except ValueError:
             continue
-    return f"UNKNOWN_0x{cmd:02X}"
+    return f"UNKNOWN_0x{int(cmd):02X}"
 
 
-def get_payload_description(cmd: int, payload: int) -> str:
-    """Get human-readable payload description for logging."""
-    if cmd in [Classification.ITEM_ACCEPT, MotionControl.SORT_SET, StatusFeedback.SORT_DONE]:
-        if payload == ItemType.PLASTIC:
-            return "PLASTIC"
-        elif payload == ItemType.CAN:
-            return "CAN"
-    
-    if cmd == SensorData.WEIGHT_DATA:
-        return f"{payload}g"
-    
-    if cmd == MotionControl.CONVEYOR_RUN:
-        return f"{payload * 100}ms"
-    
-    return f"0x{payload:02X}" if payload else "0x00"
+def get_payload_description(cmd: int, payload: int | bytes | bytearray | None) -> str:
+    payload_bytes = normalize_payload(payload)
+    payload_int = payload_to_int(payload_bytes)
+
+    if int(cmd) == int(ReadCommand.READ_SENSOR) and len(payload_bytes) == 1:
+        try:
+            return SensorSelector(payload_int).name
+        except ValueError:
+            pass
+
+    if int(cmd) == int(DeviceControl.RING_LIGHT) and len(payload_bytes) == 1:
+        try:
+            return RingLightColor(payload_int).name
+        except ValueError:
+            pass
+
+    if int(cmd) == int(DeviceControl.BUZZER_BEEP) and len(payload_bytes) == 1:
+        try:
+            return BuzzerPattern(payload_int).name
+        except ValueError:
+            pass
+
+    if int(cmd) == int(SessionControl.ACCEPT_ITEM) and len(payload_bytes) == 1:
+        try:
+            return ItemType(payload_int).name
+        except ValueError:
+            pass
+
+    if int(cmd) == int(AsyncEvent.ITEM_PLACED) and len(payload_bytes) >= 4:
+        weight_mg = int.from_bytes(payload_bytes[:4], "little", signed=True)
+        return f"{weight_mg} mg"
+
+    if int(cmd) == int(AsyncEvent.BASKET_STATUS) and len(payload_bytes) >= 1:
+        mask = payload_bytes[0]
+        return f"mask=0x{mask:02X}"
+
+    if len(payload_bytes) == 0:
+        return "(none)"
+    if len(payload_bytes) == 1:
+        return f"0x{payload_int:02X}"
+    return payload_bytes.hex(" ")
 
 
 @dataclass
 class Frame:
-    """Serial communication frame."""
-    seq: int
-    cmd: int
-    payload: int
-    crc: Optional[int] = None
+    seq: int = 0
+    cmd: int = 0
+    payload: bytes = b""
+    crc: int | None = None
+    crc_valid: bool = True
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
+        self.payload = normalize_payload(self.payload)
         if self.crc is None:
-            self.crc = calculate_crc([self.seq, self.cmd, self.payload])
+            self.crc = calculate_crc([START_BYTE, self.cmd & 0xFF, len(self.payload) & 0xFF, *self.payload])
+
+    @property
+    def payload_len(self) -> int:
+        return len(self.payload)
+
+    @property
+    def payload_int(self) -> int:
+        return payload_to_int(self.payload)
 
     def to_bytes(self) -> bytes:
-        """Serialize frame to bytes (CRC low byte first)."""
+        assert self.crc is not None
         return bytes([
-            SOF,
-            self.seq & 0xFF,
+            START_BYTE,
             self.cmd & 0xFF,
-            self.payload & 0xFF,
+            self.payload_len & 0xFF,
+            *self.payload,
             self.crc & 0xFF,
-            (self.crc >> 8) & 0xFF
+            (self.crc >> 8) & 0xFF,
         ])
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> Optional['Frame']:
-        """Parse and validate frame from received bytes."""
-        if len(data) != FRAME_SIZE:
+    def from_bytes(cls, data: bytes) -> Frame | None:
+        if not validate_frame_bytes(data):
             return None
-        if data[0] != SOF:
-            return None
-            
-        seq = data[1]
-        cmd = data[2]
-        payload = data[3]
-        crc_received = data[4] | (data[5] << 8)
-        
-        crc_calculated = calculate_crc([seq, cmd, payload])
-        if crc_calculated != crc_received:
-            return None
-            
-        return cls(seq, cmd, payload, crc_received)
+        cmd = data[1]
+        payload_len = data[2]
+        payload = bytes(data[3:3 + payload_len])
+        crc_received = data[-2] | (data[-1] << 8)
+        return cls(seq=0, cmd=cmd, payload=payload, crc=crc_received, crc_valid=True)
+
+    @classmethod
+    def try_parse_from_buffer(cls, data: bytes | bytearray) -> tuple[Frame | None, int]:
+        if len(data) < 1:
+            return None, 0
+
+        if data[0] != START_BYTE:
+            try:
+                next_start = bytes(data).index(START_BYTE)
+            except ValueError:
+                return None, len(data)
+            return None, next_start
+
+        if len(data) < MIN_FRAME_SIZE:
+            return None, 0
+
+        payload_len = data[2]
+        total_len = 1 + 1 + 1 + payload_len + 2
+        if len(data) < total_len:
+            return None, 0
+
+        frame_bytes = bytes(data[:total_len])
+        frame = cls.from_bytes(frame_bytes)
+        return frame, total_len
 
     def __str__(self) -> str:
-        cmd_name = get_command_name(self.cmd)
-        payload_desc = get_payload_description(self.cmd, self.payload)
-        return f"Frame(SEQ={self.seq:02X}, CMD={cmd_name}, PL={payload_desc})"
+        return f"Frame(MSG_ID=0x{self.cmd:02X} {get_command_name(self.cmd)}, PL={get_payload_description(self.cmd, self.payload)})"
 
 
 class SequenceManager:
-    """Manages sequence numbers for transmitted frames."""
-    
-    def __init__(self):
+    def __init__(self) -> None:
         self._seq = 0
-    
+
     def next(self) -> int:
         seq = self._seq
         self._seq = (self._seq + 1) & 0xFF
         return seq
-    
-    def reset(self):
+
+    def reset(self) -> None:
         self._seq = 0
-    
+
     @property
     def current(self) -> int:
         return self._seq
 
 
-# Expected response mapping
-EXPECTED_RESPONSES = {
-    SystemControl.SYS_INIT: [StatusFeedback.SYS_READY],
-    SystemControl.SYS_RESET: [StatusFeedback.SYS_READY],
-    SystemControl.SYS_PING: [StatusFeedback.SYS_IDLE, StatusFeedback.SYS_BUSY],
-    SystemControl.SYS_STOP_ALL: [StatusFeedback.SYS_IDLE],
-    OperationControl.OP_NEW: [StatusFeedback.SYS_READY],
-    OperationControl.OP_CANCEL: [StatusFeedback.SYS_IDLE],
-    OperationControl.OP_END: [StatusFeedback.SYS_IDLE],
-    MotionControl.GATE_OPEN: [StatusFeedback.GATE_OPENED],
-    MotionControl.GATE_CLOSE: [StatusFeedback.GATE_CLOSED, StatusFeedback.GATE_BLOCKED],
-    MotionControl.CONVEYOR_RUN: [StatusFeedback.CONVEYOR_DONE],
-    MotionControl.CONVEYOR_STOP: [StatusFeedback.CONVEYOR_DONE],
-    MotionControl.REJECT_ACTIVATE: [StatusFeedback.REJECT_DONE],
-    MotionControl.REJECT_HOME: [StatusFeedback.REJECT_HOME_OK],
-    MotionControl.SORT_SET: [StatusFeedback.SORT_DONE],
-    # ITEM_ACCEPT and ITEM_REJECT have no direct response
+KNOWN_TX_FRAMES: dict[tuple[int, bytes], bytes] = {
+    (int(SystemControl.PING), b""): build_frame_bytes(SystemControl.PING),
+    (int(SystemControl.GET_MCU_STATUS), b""): build_frame_bytes(SystemControl.GET_MCU_STATUS),
+    (int(SystemControl.SYSTEM_RESET), b""): build_frame_bytes(SystemControl.SYSTEM_RESET),
+    (int(ReadCommand.POLL_WEIGHT), b""): build_frame_bytes(ReadCommand.POLL_WEIGHT),
+    (int(DeviceControl.RING_LIGHT), bytes([int(RingLightColor.OFF)])): build_frame_bytes(DeviceControl.RING_LIGHT, bytes([int(RingLightColor.OFF)])),
+    (int(DeviceControl.RING_LIGHT), bytes([int(RingLightColor.RED)])): build_frame_bytes(DeviceControl.RING_LIGHT, bytes([int(RingLightColor.RED)])),
+    (int(DeviceControl.RING_LIGHT), bytes([int(RingLightColor.GREEN)])): build_frame_bytes(DeviceControl.RING_LIGHT, bytes([int(RingLightColor.GREEN)])),
+    (int(DeviceControl.RING_LIGHT), bytes([int(RingLightColor.BLUE)])): build_frame_bytes(DeviceControl.RING_LIGHT, bytes([int(RingLightColor.BLUE)])),
+    (int(DeviceControl.RING_LIGHT), bytes([int(RingLightColor.YELLOW)])): build_frame_bytes(DeviceControl.RING_LIGHT, bytes([int(RingLightColor.YELLOW)])),
+    (int(DeviceControl.RING_LIGHT), bytes([int(RingLightColor.CYAN)])): build_frame_bytes(DeviceControl.RING_LIGHT, bytes([int(RingLightColor.CYAN)])),
+    (int(DeviceControl.RING_LIGHT), bytes([int(RingLightColor.MAGENTA)])): build_frame_bytes(DeviceControl.RING_LIGHT, bytes([int(RingLightColor.MAGENTA)])),
+    (int(DeviceControl.RING_LIGHT), bytes([int(RingLightColor.WHITE)])): build_frame_bytes(DeviceControl.RING_LIGHT, bytes([int(RingLightColor.WHITE)])),
+    (int(DeviceControl.BUZZER_BEEP), bytes([int(BuzzerPattern.SINGLE)])): build_frame_bytes(DeviceControl.BUZZER_BEEP, bytes([int(BuzzerPattern.SINGLE)])),
+    (int(DeviceControl.BUZZER_BEEP), bytes([int(BuzzerPattern.DOUBLE)])): build_frame_bytes(DeviceControl.BUZZER_BEEP, bytes([int(BuzzerPattern.DOUBLE)])),
+    (int(DeviceControl.BUZZER_BEEP), bytes([int(BuzzerPattern.LONG)])): build_frame_bytes(DeviceControl.BUZZER_BEEP, bytes([int(BuzzerPattern.LONG)])),
+    (int(SessionControl.REQUEST_SEQUENCE_STATUS), b""): build_frame_bytes(SessionControl.REQUEST_SEQUENCE_STATUS),
+    (int(SessionControl.START_SESSION), b""): build_frame_bytes(SessionControl.START_SESSION),
+    (int(SessionControl.ACCEPT_ITEM), bytes([int(ItemType.PLASTIC)])): build_frame_bytes(SessionControl.ACCEPT_ITEM, bytes([int(ItemType.PLASTIC)])),
+    (int(SessionControl.ACCEPT_ITEM), bytes([int(ItemType.ALUMINUM)])): build_frame_bytes(SessionControl.ACCEPT_ITEM, bytes([int(ItemType.ALUMINUM)])),
+    (int(SessionControl.REJECT_ITEM), b"\x01"): build_frame_bytes(SessionControl.REJECT_ITEM, b"\x01"),
+    (int(SessionControl.END_SESSION), b""): build_frame_bytes(SessionControl.END_SESSION),
+    (int(ReadCommand.READ_SENSOR), bytes([int(SensorSelector.SORT_PLASTIC)])): build_frame_bytes(ReadCommand.READ_SENSOR, bytes([int(SensorSelector.SORT_PLASTIC)])),
+    (int(ReadCommand.READ_SENSOR), bytes([int(SensorSelector.SORT_ALUMINUM)])): build_frame_bytes(ReadCommand.READ_SENSOR, bytes([int(SensorSelector.SORT_ALUMINUM)])),
+    (int(ReadCommand.READ_SENSOR), bytes([int(SensorSelector.GATE_CLOSED)])): build_frame_bytes(ReadCommand.READ_SENSOR, bytes([int(SensorSelector.GATE_CLOSED)])),
+    (int(ReadCommand.READ_SENSOR), bytes([int(SensorSelector.GATE_OPENED)])): build_frame_bytes(ReadCommand.READ_SENSOR, bytes([int(SensorSelector.GATE_OPENED)])),
+    (int(ReadCommand.READ_SENSOR), bytes([int(SensorSelector.EXIT_GATE)])): build_frame_bytes(ReadCommand.READ_SENSOR, bytes([int(SensorSelector.EXIT_GATE)])),
+    (int(ReadCommand.READ_SENSOR), bytes([int(SensorSelector.GATE_ALARM)])): build_frame_bytes(ReadCommand.READ_SENSOR, bytes([int(SensorSelector.GATE_ALARM)])),
+    (int(ReadCommand.READ_SENSOR), bytes([int(SensorSelector.REJECT_HOME)])): build_frame_bytes(ReadCommand.READ_SENSOR, bytes([int(SensorSelector.REJECT_HOME)])),
+    (int(ReadCommand.READ_SENSOR), bytes([int(SensorSelector.DROP_SENSOR)])): build_frame_bytes(ReadCommand.READ_SENSOR, bytes([int(SensorSelector.DROP_SENSOR)])),
+    (int(ReadCommand.READ_SENSOR), bytes([int(SensorSelector.BASKET_1)])): build_frame_bytes(ReadCommand.READ_SENSOR, bytes([int(SensorSelector.BASKET_1)])),
+    (int(ReadCommand.READ_SENSOR), bytes([int(SensorSelector.BASKET_2)])): build_frame_bytes(ReadCommand.READ_SENSOR, bytes([int(SensorSelector.BASKET_2)])),
+    (int(ReadCommand.READ_SENSOR), bytes([int(SensorSelector.BASKET_3)])): build_frame_bytes(ReadCommand.READ_SENSOR, bytes([int(SensorSelector.BASKET_3)])),
 }
