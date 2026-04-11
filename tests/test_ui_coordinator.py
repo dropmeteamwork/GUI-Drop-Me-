@@ -1,65 +1,6 @@
-﻿import sys
-import types
+from tests.qt_test_stubs import import_with_fake_pyside
 
-
-def _install_fake_pyside():
-    qtcore = types.ModuleType("PySide6.QtCore")
-    qtqml = types.ModuleType("PySide6.QtQml")
-    pyside6 = types.ModuleType("PySide6")
-
-    class _Signal:
-        def __init__(self, *args, **kwargs):
-            self._events = []
-        def emit(self, *args, **kwargs):
-            self._events.append((args, kwargs))
-
-    class _QLoggingCategory:
-        def __init__(self, name=""):
-            self.name = name
-
-    class _QObject:
-        def property(self, name):
-            return getattr(self, name)
-        def setProperty(self, name, value):
-            setattr(self, name, value)
-
-    def _slot(*args, **kwargs):
-        def deco(fn):
-            return fn
-        return deco
-
-    def _property(_type, fget, fset=None, notify=None):
-        return property(fget, fset)
-
-    def _qml_element(cls):
-        return cls
-
-    def _noop(*args, **kwargs):
-        return None
-
-    qtcore.QObject = _QObject
-    qtcore.Signal = _Signal
-    qtcore.Slot = _slot
-    qtcore.Property = _property
-    qtcore.QLoggingCategory = _QLoggingCategory
-    qtcore.qCCritical = _noop
-    qtcore.qCDebug = _noop
-    qtcore.qCInfo = _noop
-    qtcore.qCWarning = _noop
-
-    qtqml.QmlElement = _qml_element
-
-    pyside6.QtCore = qtcore
-    pyside6.QtQml = qtqml
-
-    sys.modules.setdefault("PySide6", pyside6)
-    sys.modules.setdefault("PySide6.QtCore", qtcore)
-    sys.modules.setdefault("PySide6.QtQml", qtqml)
-
-
-_install_fake_pyside()
-
-from gui.ui_coordinator import UiCoordinator
+UiCoordinator = import_with_fake_pyside("gui.ui_coordinator").UiCoordinator
 
 
 class FakeAppState:
@@ -144,6 +85,7 @@ def test_gate_alarm_shows_remove_hand_popup():
     ui.appState = app
 
     ui.handleHwHandInGate()
+    ui._show_delayed_hand_popup()
 
     assert app.handInGate is True
     assert ("showPopup", "hands", {}) in app.calls
