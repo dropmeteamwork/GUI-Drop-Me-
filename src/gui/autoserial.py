@@ -1586,12 +1586,14 @@ class AutoSerial(QObject):
             return False
 
         self.logger.info(f"Starting accept sequence for {item_type}")
-        payload = mcu.ItemType.PLASTIC if item_type == "plastic" else mcu.ItemType.ALUMINUM
+        payload = bytes([
+            int(mcu.ItemType.PLASTIC if item_type == "plastic" else mcu.ItemType.ALUMINUM)
+        ])
         if CONSIDER_ITEM_DROPPED:
             self._session_stage = "await_item_drop"
-            return self._send(mcu.SessionControl.ACCEPT_ITEM, payload)
+            return self._send(int(mcu.SessionControl.ACCEPT_ITEM), payload)
 
-        ok = self._send(mcu.SessionControl.ACCEPT_ITEM, payload)
+        ok = self._send(int(mcu.SessionControl.ACCEPT_ITEM), payload)
         if ok:
             self._session_stage = "active"
             if item_type == "plastic":
