@@ -18,7 +18,7 @@ Item {
     }
 
     required property Item view
-    required property ImageCapture imageCapture
+    required property var captureSource
 
     RecycleCoordinator {
         id: recycleCoordinator
@@ -89,9 +89,13 @@ Item {
     }
 
     Connections {
-        target: controller.imageCapture
+        target: controller.captureSource
 
-        function onImageSaved(requestId, capturePath) {
+        function onCaptureSaved(capturePath, success) {
+            if (!success) {
+                console.log("[RecycleFlowController] masked capture failed:", capturePath)
+                return
+            }
             Global.server.getCapturePrediction(capturePath, controller.view.phoneNumber)
         }
     }
@@ -186,7 +190,7 @@ Item {
                 return
             }
             var capturePath = SystemInfo.getNextCapturePath()
-            controller.imageCapture.captureToFile(capturePath)
+            controller.captureSource.captureToFile(capturePath)
         }
 
         function onSessionClockFinished() {
@@ -204,5 +208,4 @@ Item {
         flowCoordinator.stopFlow()
     }
 }
-
 

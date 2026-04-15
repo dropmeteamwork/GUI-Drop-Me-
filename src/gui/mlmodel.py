@@ -75,10 +75,10 @@ class Config:
     # Per-class ACCEPTANCE thresholds (applied in decision logic)
     # Class IDs: 0=PLASTIC, 1=HAND, 2=CRUSHED_PLASTIC, 3=ALUMINUM, 4=CRUSHED_ALUMINUM
     CLASS_ACCEPT_THRESHOLDS = {
-        0: 0.40,  # PLASTIC - must be 90%+ confident
+        0: 0.20,  # PLASTIC - must be 90%+ confident
         1: 0.10,  # HAND - lower threshold to catch hands reliably
         2: 0.50,  # CRUSHED_PLASTIC
-        3: 0.40,  # ALUMINUM - must be 80%+ confident
+        3: 0.20,  # ALUMINUM - must be 80%+ confident
         4: 0.50,  # CRUSHED_ALUMINUM
     }
     DEFAULT_CLASS_THRESHOLD = 0.70

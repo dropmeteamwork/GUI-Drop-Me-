@@ -14,6 +14,7 @@ Item {
     required property Image captureImage
     required property Item bottomView
     required property CaptureSession captureSession
+    required property var cameraCapture
 
     property bool transitionedFromStart: false
     property var _pendingPopupPayload: ({})
@@ -72,11 +73,11 @@ Item {
 
         if (target === "recycle_qr") {
             out.userType = Global.UserType.QrCode
-            out.imageCapture = sm.captureSession.imageCapture
+            out.captureSource = sm.cameraCapture
         } else if (target === "recycle_phone") {
             out.userType = Global.UserType.PhoneNumber
             out.phoneNumber = p.phoneNumber || ""
-            out.imageCapture = sm.captureSession.imageCapture
+            out.captureSource = sm.cameraCapture
         }
 
         return out

@@ -100,6 +100,7 @@ Window {
                 captureImage: captureImage
                 bottomView: bottomView
                 captureSession: captureSession
+                cameraCapture: cameraVideoOutput
             }
         }
 
@@ -145,9 +146,8 @@ Window {
                 }
             }
 
-            VideoOutput {
+            CameraMaskedCapture {
                 id: cameraVideoOutput
-                fillMode: VideoOutput.PreserveAspectCrop
             }
 
             Image {
@@ -163,7 +163,7 @@ Window {
         id: captureSession
         camera: Camera { active: true }
         imageCapture: ImageCapture { }
-        videoOutput: cameraVideoOutput
+        videoOutput: cameraVideoOutput.videoOutput
     }
 
     Videos {
@@ -172,4 +172,3 @@ Window {
         videoOutput: videoOutput
     }
 }
-

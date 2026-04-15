@@ -34,6 +34,9 @@ QML_IMPORT_NAME = "DropMe"
 QML_IMPORT_MAJOR_VERSION = 1
 QML_IMPORT_MINOR_VERSION = 0
 MIN_ITEM_WEIGHT_GRAMS = 10
+CONSIDER_ITEM_DROPPED = str(os.environ.get("DROPME_CONSIDER_ITEM_DROPPED", "0")).strip().lower() in ("1", "true", "yes", "on")
+CONSIDER_EXIT_GATE = str(os.environ.get("DROPME_CONSIDER_EXIT_GATE", "0")).strip().lower() in ("1", "true", "yes", "on")
+CONSIDER_WEIGHT = str(os.environ.get("DROPME_CONSIDER_WEIGHT", "0")).strip().lower() in ("1", "true", "yes", "on")
 
 
 @QmlElement
@@ -116,6 +119,7 @@ class AutoSerial(QObject):
         self._pending_exit_verification: dict | None = None
         self._reject_clear_polls = 0
         self._startup_scan_started_at = time.monotonic()
+        self._awaiting_first_item_after_gate_open = False
         self._sensor_states: dict[str, int] = {
             "gate_opened": 0,
             "gate_closed": 0,
@@ -469,6 +473,7 @@ class AutoSerial(QObject):
         self._pending_requests.clear()
         self._pending_exit_verification = None
         self._reject_clear_polls = 0
+        self._awaiting_first_item_after_gate_open = False
         self._sensor_states.update({
             "gate_opened": 0,
             "gate_closed": 0,
@@ -591,6 +596,7 @@ class AutoSerial(QObject):
         self._current_prediction_confidence = 1.0 if normalized else 0.0
         self._last_prediction_ts = time.time() if normalized else 0.0
         if normalized and normalized != "hand":
+            self._mark_first_item_after_gate_open_seen()
             self._restart_session_idle_timer()
         self._log_session_event(direction="INFER", event_name="ml_prediction", payload_summary=normalized)
         self._update_fraud_state()
@@ -623,8 +629,9 @@ class AutoSerial(QObject):
             expected = (int(mcu.AsyncEvent.STATUS_OK),)
             timeout_s = 3.0
         elif cmd == int(mcu.SessionControl.ACCEPT_ITEM):
-            expected = (int(mcu.AsyncEvent.ITEM_DROPPED),)
-            timeout_s = 5.0
+            if CONSIDER_ITEM_DROPPED:
+                expected = (int(mcu.AsyncEvent.ITEM_DROPPED),)
+                timeout_s = 5.0
         elif cmd == int(mcu.SessionControl.END_SESSION):
             expected = (int(mcu.AsyncEvent.BASKET_STATUS),)
             timeout_s = 5.0
@@ -709,7 +716,16 @@ class AutoSerial(QObject):
 
     def _restart_session_idle_timer(self) -> None:
         if self._session_stage in {"active", "await_item_drop", "await_reject_done"}:
+            if self._session_stage == "active" and self._awaiting_first_item_after_gate_open:
+                return
             self._session_idle_timer.start()
+
+    def _mark_first_item_after_gate_open_seen(self) -> None:
+        if not self._awaiting_first_item_after_gate_open:
+            return
+        self._awaiting_first_item_after_gate_open = False
+        self._log_session_event(direction="STATE", event_name="first_item_after_gate_open")
+        self._restart_session_idle_timer()
 
     def _is_detection_stage(self) -> bool:
         return self._session_stage in {"await_gate_open", "active", "await_item_drop", "await_reject_done"}
@@ -725,7 +741,11 @@ class AutoSerial(QObject):
 
     def _has_item_evidence(self) -> bool:
         has_prediction = self._current_prediction in {"plastic", "aluminum", "other"}
-        has_weight = self._last_weight_grams is not None and self._last_weight_grams >= MIN_ITEM_WEIGHT_GRAMS
+        has_weight = (
+            CONSIDER_WEIGHT
+            and self._last_weight_grams is not None
+            and self._last_weight_grams >= MIN_ITEM_WEIGHT_GRAMS
+        )
         return has_prediction or has_weight
 
     def _update_fraud_state(self) -> None:
@@ -776,6 +796,12 @@ class AutoSerial(QObject):
         self.itemRejected.emit()
 
     def _start_exit_gate_verification(self, item_type: str) -> None:
+        if not CONSIDER_EXIT_GATE:
+            self._pending_exit_verification = None
+            self._exit_gate_timeout_timer.stop()
+            self._log_session_event(direction="STATE", event_name="exit_gate_verification_skipped", note=str(item_type))
+            self._clear_item_evidence()
+            return
         self._pending_exit_verification = {
             "item_type": str(item_type),
             "started_at": time.time(),
@@ -904,7 +930,7 @@ class AutoSerial(QObject):
         )
         self._session_stage = "active"
         self._gate_open_deadline = 0.0
-        self._restart_session_idle_timer()
+        self._awaiting_first_item_after_gate_open = True
         self._log_session_event(direction="STATE", event_name="gate_open_confirmed")
         self.ready.emit()
 
@@ -966,6 +992,8 @@ class AutoSerial(QObject):
 
     def _on_session_idle_timeout(self) -> None:
         if self._session_stage != "active":
+            return
+        if self._awaiting_first_item_after_gate_open:
             return
         if self._gate_blocked or self._has_item_evidence():
             self._restart_session_idle_timer()
@@ -1093,7 +1121,7 @@ class AutoSerial(QObject):
             self._log_weight(weight_grams)
             self.weightReceived.emit(weight_grams)
             self._append_sensor_event("WEIGHT_DATA", weight_grams, {"milligrams": weight_mg})
-            if weight_grams >= MIN_ITEM_WEIGHT_GRAMS:
+            if CONSIDER_WEIGHT and weight_grams >= MIN_ITEM_WEIGHT_GRAMS:
                 self._restart_session_idle_timer()
             self._update_fraud_state()
             self.logger.info(f"Weight response: {weight_mg} mg ({weight_grams} g)")
@@ -1173,15 +1201,24 @@ class AutoSerial(QObject):
             self._last_error = "NACK"
             self.errorOccurred.emit("NACK", payload_value)
             self._append_sensor_event("NACK", payload_value, {"raw_hex": frame.payload.hex(" ")})
+            pending_desc = "none"
+            if pending is not None:
+                pending_cmd = int(pending["cmd"])
+                pending_payload = bytes(pending.get("payload", b""))
+                pending_cmd_name = mcu.get_command_name(pending_cmd)
+                pending_payload_desc = mcu.get_payload_description(pending_cmd, pending_payload)
+                pending_desc = f"{pending_cmd_name}({pending_payload_desc})"
             self._log_session_event(
                 direction="RX",
                 event_name="NACK",
                 raw_hex=raw.hex(" "),
                 crc_valid=True,
                 payload_summary=frame.payload.hex(" "),
-                note=f"rejected_pending={pending['cmd'] if pending else 'none'}",
+                note=f"rejected_pending={pending_desc}",
             )
-            self.logger.error(f"NACK received: {frame.payload.hex(' ')}")
+            self.logger.error(
+                f"NACK received: {frame.payload.hex(' ')}; rejected pending request: {pending_desc}"
+            )
             return
 
         if cmd == mcu.ResponseCode.DATA:
@@ -1256,22 +1293,16 @@ class AutoSerial(QObject):
                 )
                 return
             if self._session_stage == "await_gate_open" and not self._gate_open:
-                if not self._gate_blocked and not self._sensor_states.get("gate_closed", 0):
-                    self.logger.warning(
-                        "ITEM_PLACED arrived before gate-open confirmation; inferring active session "
-                        f"from item evidence ({weight_mg} mg)"
-                    )
-                    self._promote_to_active_from_item_placed(weight_mg)
-                else:
-                    self._log_session_event(
-                        direction="STATE",
-                        event_name="item_placed_before_gate_open",
-                        note=f"{weight_mg}mg",
-                    )
-                    self.logger.info(
-                        f"ITEM_PLACED received before gate-open confirmation; waiting for gate open ({weight_mg} mg)"
-                    )
-                    return
+                self._log_session_event(
+                    direction="STATE",
+                    event_name="item_placed_before_gate_open_ignored",
+                    note=f"{weight_mg}mg",
+                )
+                self.logger.info(
+                    f"ITEM_PLACED received before gate-open confirmation; ignoring until gate opens ({weight_mg} mg)"
+                )
+                return
+            self._mark_first_item_after_gate_open_seen()
             self._session_stage = "active"
             self._restart_session_idle_timer()
             self._update_fraud_state()
@@ -1320,6 +1351,11 @@ class AutoSerial(QObject):
                 note=f"cmd=0x{pending['cmd']:02X} payload={pending_payload_desc} stage={pending['stage']}",
             )
             if pending["cmd"] == int(mcu.SystemControl.PING):
+                if self._session_stage == "active" and self._awaiting_first_item_after_gate_open:
+                    self.logger.warning(
+                        "Ping timeout during fresh active session before first item; keeping session alive"
+                    )
+                    return
                 if self._session_stage in {"active", "await_item_drop", "await_gate_open", "await_gate_close"}:
                     self.logger.warning(
                         f"Ping timeout during {self._session_stage}; requesting clean end-session instead of dropping the connection"
@@ -1551,8 +1587,23 @@ class AutoSerial(QObject):
 
         self.logger.info(f"Starting accept sequence for {item_type}")
         payload = mcu.ItemType.PLASTIC if item_type == "plastic" else mcu.ItemType.ALUMINUM
-        self._session_stage = "await_item_drop"
-        return self._send(mcu.SessionControl.ACCEPT_ITEM, payload)
+        if CONSIDER_ITEM_DROPPED:
+            self._session_stage = "await_item_drop"
+            return self._send(mcu.SessionControl.ACCEPT_ITEM, payload)
+
+        ok = self._send(mcu.SessionControl.ACCEPT_ITEM, payload)
+        if ok:
+            self._session_stage = "active"
+            if item_type == "plastic":
+                self.plasticAccepted.emit()
+                self._start_exit_gate_verification("plastic")
+            else:
+                self.canAccepted.emit()
+                self._start_exit_gate_verification("can")
+            self.conveyorDone.emit()
+            self._restart_session_idle_timer()
+            self._log_session_event(direction="STATE", event_name="accept_completed_without_item_dropped", note=item_type)
+        return ok
 
     def _start_reject_sequence(self) -> bool:
         if self._fraud_hold:
@@ -1567,13 +1618,15 @@ class AutoSerial(QObject):
             return False
 
         self.logger.info("Starting reject sequence")
-        self._session_stage = "await_reject_done"
-        self._reject_clear_polls = 0
         ok = self._send(mcu.SessionControl.REJECT_ITEM, b"\x01")
         if ok:
-            self._log_session_event(direction="STATE", event_name="reject_sent", note="completion_is_firmware_underdocumented")
+            self._log_session_event(direction="STATE", event_name="reject_sent", note="completion_not_blocking_next_item")
+            self._session_stage = "active"
             self._clear_item_evidence()
             self._restart_session_idle_timer()
+            self.rejectDone.emit()
+            self.rejectHomeOk.emit()
+            self.itemRejected.emit()
         else:
             self._session_stage = "active"
         return ok
@@ -1817,7 +1870,3 @@ class AutoSerial(QObject):
             self.port.close()
 
         self.logger.info("AutoSerial cleaned up")
-
-
-
-

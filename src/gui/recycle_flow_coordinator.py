@@ -212,6 +212,20 @@ class RecycleFlowCoordinator(QObject):
         self._def_pred_image = ""
         self._cleanup_path = ""
 
+    def _release_finish_locks(self) -> None:
+        """Let end-of-session UI proceed even if ML/hardware callbacks are still in flight."""
+        self._camera_restore_timer.stop()
+        self._deferral_timer.stop()
+        self._prediction_guard_timer.stop()
+        self._hand_wait_timer.stop()
+        self._processing_release_timer.stop()
+        self._prediction_waiting_for_clear = False
+        self._holding_capture_until_completion = False
+        self._prediction_applied = False
+        self._prediction_guard_elapsed = False
+        self._set_processing_item(False)
+        self._restore_camera_if_possible()
+
     def _apply_prediction_now(self) -> None:
         if self._prediction_applied:
             return
@@ -275,6 +289,7 @@ class RecycleFlowCoordinator(QObject):
     @Slot()
     def finishSessionUi(self) -> None:
         self.logger.info("Finish session requested from UI; ending hardware session")
+        self._release_finish_locks()
         self._invoke(self._serial, "sendSignOut")
         self.finishSessionUiRequested.emit()
 
@@ -352,8 +367,11 @@ class RecycleFlowCoordinator(QObject):
 
     @Slot(str, int, int)
     def onPhoneFinishRequested(self, _phone_number: str, _plastic: int, _cans: int) -> None:
-        self._set_waiting_phone_finish(True)
-        self._phone_finish_fallback_timer.start()
+        self.logger.info("Phone finish requested; completing UI immediately and continuing server sync in background")
+        self._phone_finish_fallback_timer.stop()
+        self._release_finish_locks()
+        self._set_waiting_phone_finish(False)
+        self.phoneFinishResultRequested.emit(True)
 
     @Slot()
     def onRecycleUiClockRestart(self) -> None:
@@ -411,4 +429,3 @@ class RecycleFlowCoordinator(QObject):
         if self._holding_capture_until_completion:
             self._holding_capture_until_completion = False
             self._restore_camera_if_possible()
-

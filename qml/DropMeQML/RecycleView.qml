@@ -7,7 +7,7 @@ import DropMe
 
 Item {
     required property int userType
-    required property ImageCapture imageCapture
+    required property var captureSource
 
     property string phoneNumber: ""
     property bool processingItem: false
@@ -38,7 +38,7 @@ Item {
     RecycleFlowController {
         id: flowController
         view: view
-        imageCapture: view.imageCapture
+        captureSource: view.captureSource
     }
 
     Item {

@@ -1,3 +1,5 @@
+from collections import deque
+
 import pytest
 
 pytest.importorskip("PySide6")
@@ -15,7 +17,7 @@ def _app():
     return app
 
 
-def test_item_placed_promotes_session_when_gate_open_sensor_is_missing():
+def test_item_placed_before_gate_open_is_ignored_until_gate_is_confirmed_open():
     _app()
     serial = AutoSerial()
     serial.scan_timer.stop()
@@ -38,10 +40,10 @@ def test_item_placed_promotes_session_when_gate_open_sensor_is_missing():
     frame = mcu.Frame(cmd=mcu.AsyncEvent.ITEM_PLACED, payload=weight_mg.to_bytes(4, "little", signed=True))
     serial._handle_frame(frame, frame.to_bytes())
 
-    assert serial._session_stage == "active"
-    assert serial._gate_open_deadline == 0.0
+    assert serial._session_stage == "await_gate_open"
+    assert serial._gate_open_deadline == 123.0
     assert serial._last_weight_grams == 16
-    assert ready_hits == [True]
+    assert ready_hits == []
 
 
 def test_item_placed_below_threshold_is_ignored():
@@ -69,3 +71,136 @@ def test_item_placed_below_threshold_is_ignored():
     assert serial._gate_open_deadline == 123.0
     assert serial._last_weight_grams == 0
     assert ready_hits == []
+
+
+def test_gate_open_confirmed_waits_for_first_item_before_starting_idle_timeout():
+    _app()
+    serial = AutoSerial()
+    serial.scan_timer.stop()
+    serial.ping_timer.stop()
+    serial.bin_poll_timer.stop()
+    serial._sensor_poll_timer.stop()
+
+    serial._session_stage = "await_gate_open"
+    serial._gate_open_deadline = 123.0
+
+    serial._handle_gate_open_confirmed()
+
+    assert serial._session_stage == "active"
+    assert serial._awaiting_first_item_after_gate_open is True
+    assert serial._session_idle_timer.isActive() is False
+
+
+def test_ping_timeout_during_fresh_active_session_keeps_session_alive():
+    _app()
+    serial = AutoSerial()
+    serial.scan_timer.stop()
+    serial.ping_timer.stop()
+    serial.bin_poll_timer.stop()
+    serial._sensor_poll_timer.stop()
+
+    serial._session_stage = "active"
+    serial._awaiting_first_item_after_gate_open = True
+    serial._pending_requests.append(
+        {
+            "cmd": int(mcu.SystemControl.PING),
+            "payload": b"",
+            "expected": (int(mcu.ResponseCode.ACK),),
+            "sent_at": 0.0,
+            "deadline": 0.0,
+            "stage": "active",
+        }
+    )
+
+    serial._on_command_timeout()
+
+    assert serial._session_stage == "active"
+    assert serial._pending_requests == deque()
+
+
+def test_reject_sequence_returns_to_active_immediately():
+    _app()
+    serial = AutoSerial()
+    serial.scan_timer.stop()
+    serial.ping_timer.stop()
+    serial.bin_poll_timer.stop()
+    serial._sensor_poll_timer.stop()
+
+    serial._session_stage = "active"
+    serial._current_prediction = "other"
+    serial._current_prediction_confidence = 1.0
+    serial._last_weight_grams = 18
+
+    sent = []
+    reject_hits = []
+    serial._send = lambda cmd, payload=b"": sent.append((cmd, payload)) or True
+    serial.itemRejected.connect(lambda: reject_hits.append("rejected"))
+
+    ok = serial._start_reject_sequence()
+
+    assert ok is True
+    assert sent == [(int(mcu.SessionControl.REJECT_ITEM), b"\x01")]
+    assert serial._session_stage == "active"
+    assert serial._current_prediction == ""
+    assert serial._last_weight_grams == 0
+    assert reject_hits == ["rejected"]
+
+
+def test_accept_sequence_returns_to_active_immediately_when_item_dropped_disabled():
+    _app()
+    serial = AutoSerial()
+    serial.scan_timer.stop()
+    serial.ping_timer.stop()
+    serial.bin_poll_timer.stop()
+    serial._sensor_poll_timer.stop()
+
+    serial._session_stage = "active"
+
+    sent = []
+    plastic_hits = []
+    conveyor_hits = []
+    serial._send = lambda cmd, payload=b"": sent.append((cmd, payload)) or True
+    serial.plasticAccepted.connect(lambda: plastic_hits.append("plastic"))
+    serial.conveyorDone.connect(lambda: conveyor_hits.append("done"))
+
+    ok = serial._start_accept_sequence("plastic")
+
+    assert ok is True
+    assert sent == [(int(mcu.SessionControl.ACCEPT_ITEM), bytes([int(mcu.ItemType.PLASTIC)]))]
+    assert serial._session_stage == "active"
+    assert plastic_hits == ["plastic"]
+    assert conveyor_hits == ["done"]
+    assert serial._pending_exit_verification is None
+
+
+def test_exit_gate_verification_is_skipped_by_default():
+    _app()
+    serial = AutoSerial()
+    serial.scan_timer.stop()
+    serial.ping_timer.stop()
+    serial.bin_poll_timer.stop()
+    serial._sensor_poll_timer.stop()
+
+    serial._current_prediction = "aluminum"
+    serial._current_prediction_confidence = 1.0
+    serial._last_weight_grams = 20
+
+    serial._start_exit_gate_verification("can")
+
+    assert serial._pending_exit_verification is None
+    assert serial._last_weight_grams == 0
+    assert serial._current_prediction == ""
+
+
+def test_weight_is_not_item_evidence_by_default():
+    _app()
+    serial = AutoSerial()
+    serial.scan_timer.stop()
+    serial.ping_timer.stop()
+    serial.bin_poll_timer.stop()
+    serial._sensor_poll_timer.stop()
+
+    serial._last_weight_grams = 25
+    serial._current_prediction = ""
+
+    assert serial._has_item_evidence() is False

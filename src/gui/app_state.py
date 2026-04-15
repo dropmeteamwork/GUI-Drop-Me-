@@ -400,8 +400,6 @@ class AppState(QObject):
         if p == "hand":
             self.recycleUiHandsInserted.emit()
             self.recycleUiClockRestart.emit()
-            if predImage:
-                self.recycleUiShowCapture.emit(str(predImage))
             return
 
         if p == "aluminum":
@@ -414,8 +412,6 @@ class AppState(QObject):
             if u == 1:  # QrCode
                 self.recycleRequestServerAction.emit("send_aluminum")
             self.recycleUiClockRestart.emit()
-            if predImage:
-                self.recycleUiShowCapture.emit(str(predImage))
             return
 
         if p == "plastic":
@@ -428,16 +424,12 @@ class AppState(QObject):
             if u == 1:  # QrCode
                 self.recycleRequestServerAction.emit("send_plastic")
             self.recycleUiClockRestart.emit()
-            if predImage:
-                self.recycleUiShowCapture.emit(str(predImage))
             return
 
         if p == "other":
             self.recycleRequestHardwareAction.emit("other")
             self.recycleUiOtherInserted.emit()
             self.recycleUiClockRestart.emit()
-            if predImage:
-                self.recycleUiShowCapture.emit(str(predImage))
             return
 
     @Slot(int, str)
@@ -460,7 +452,6 @@ class AppState(QObject):
             return
 
         self.recycleRequestFinishPhoneNumber.emit(pn, int(self._recycle_plastic), int(self._recycle_cans))
-
 
 
 
