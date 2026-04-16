@@ -1,0 +1,85 @@
+# Docker Compose for Windows 10/11
+# This file is specifically configured for Windows environments
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.windows.yml up
+
+version: '3.8'
+
+services:
+  dropme-gui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: dropme-gui:latest
+    container_name: dropme-gui-app
+    
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DROPME_DEV=${DROPME_DEV:-0}
+      # Windows-specific settings
+      - QT_QPA_PLATFORM=offscreen
+      - DISPLAY=:99
+    
+    volumes:
+      # Windows-compatible paths - use forward slashes or mount letters
+      # Adjust these paths based on your Windows system
+      - .:/app:cached
+      - dropme-logs:C:\app\logs
+      - dropme-data:C:\app\data
+    
+    networks:
+      - dropme-network
+    
+    # Security
+    cap_drop:
+      - NET_RAW
+    security_opt:
+      - no-new-privileges:true
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    
+    restart: unless-stopped
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    stdin_open: true
+    tty: true
+
+  # Optional: Development database service
+  dropme-db:
+    image: postgres:16-alpine
+    container_name: dropme-db
+    environment:
+      POSTGRES_USER: dropme
+      POSTGRES_PASSWORD: dropme_dev
+      POSTGRES_DB: dropme_db
+    volumes:
+      - dropme-postgres-data:C:\var\lib\postgresql\data
+    ports:
+      - "5432:5432"
+    networks:
+      - dropme-network
+    restart: unless-stopped
+    profiles:
+      - dev
+
+volumes:
+  dropme-logs:
+  dropme-data:
+  dropme-postgres-data:
+
+networks:
+  dropme-network:
+    driver: bridge

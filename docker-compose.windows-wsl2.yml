@@ -1,0 +1,89 @@
+# Docker Compose for Windows 10/11 using WSL2 with X11 forwarding
+# This configuration enables GUI display via VcXsrv or similar X11 server on Windows
+# Prerequisites: VcXsrv or Xming X11 server running on Windows host
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.windows-wsl2.yml up
+
+version: '3.8'
+
+services:
+  dropme-gui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: dropme-gui:latest
+    container_name: dropme-gui-app
+    
+    environment:
+      - DISPLAY=host.docker.internal:0
+      - QT_QPA_PLATFORM=xcb
+      - PYTHONUNBUFFERED=1
+      - DROPME_DEV=${DROPME_DEV:-0}
+      # WSL2 specific
+      - LIBGL_ALWAYS_INDIRECT=1
+    
+    volumes:
+      # X11 socket via WSL2
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      
+      # Application data volumes - Windows paths via WSL2
+      - .:/app:cached
+      - dropme-logs:/app/logs
+      - dropme-data:/app/data
+    
+    networks:
+      - dropme-network
+    
+    # Security
+    cap_drop:
+      - NET_RAW
+    security_opt:
+      - no-new-privileges:true
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    
+    restart: unless-stopped
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    stdin_open: true
+    tty: true
+
+  # Optional: Development database service
+  dropme-db:
+    image: postgres:16-alpine
+    container_name: dropme-db
+    environment:
+      POSTGRES_USER: dropme
+      POSTGRES_PASSWORD: dropme_dev
+      POSTGRES_DB: dropme_db
+    volumes:
+      - dropme-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - dropme-network
+    restart: unless-stopped
+    profiles:
+      - dev
+
+volumes:
+  dropme-logs:
+  dropme-data:
+  dropme-postgres-data:
+
+networks:
+  dropme-network:
+    driver: bridge

@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  dropme-gui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: dropme-gui:latest
+    container_name: dropme-gui-app
+    
+    # Display and X11 forwarding for GUI
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_QPA_PLATFORM=xcb
+      - PYTHONUNBUFFERED=1
+      - DROPME_DEV=${DROPME_DEV:-0}
+    
+    # X11 socket and authorization
+    volumes:
+      # X11 display forwarding (Linux only)
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${XAUTHORITY:-$HOME/.Xauthority}:/root/.Xauthority:ro
+      
+      # Application data volumes
+      - ./src:/app/src
+      - ./qml:/app/qml
+      - dropme-logs:/app/logs
+      - dropme-data:/app/data
+      
+      # Development mode: mount entire project for live updates
+      - ./:/app:cached
+    
+    # Network
+    networks:
+      - dropme-network
+    
+    # Security
+    cap_drop:
+      - NET_RAW
+    security_opt:
+      - no-new-privileges:true
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Interactive terminal for development
+    stdin_open: true
+    tty: true
+
+  # Optional: Development database service (if needed)
+  dropme-db:
+    image: postgres:16-alpine
+    container_name: dropme-db
+    environment:
+      POSTGRES_USER: dropme
+      POSTGRES_PASSWORD: dropme_dev
+      POSTGRES_DB: dropme_db
+    volumes:
+      - dropme-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - dropme-network
+    restart: unless-stopped
+    profiles:
+      - dev
+
+volumes:
+  dropme-logs:
+  dropme-data:
+  dropme-postgres-data:
+
+networks:
+  dropme-network:
+    driver: bridge

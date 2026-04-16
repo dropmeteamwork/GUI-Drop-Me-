@@ -1,0 +1,33 @@
+# Development override for Windows 10/11
+# Headless development mode with mount for live code editing
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.windows-dev.yml up
+
+version: '3.8'
+
+services:
+  dropme-gui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    image: dropme-gui:dev
+    container_name: dropme-gui-dev
+    
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DROPME_DEV=1
+      - QT_QPA_PLATFORM=offscreen
+    
+    volumes:
+      # Full project mount for live code updates on Windows
+      - .:/app:cached
+      - ./src:/app/src:cached
+      - ./qml:/app/qml:cached
+    
+    networks:
+      - dropme-network
+    
+    # Allow running pytest and other dev tools
+    entrypoint: /bin/bash
+    stdin_open: true
+    tty: true
