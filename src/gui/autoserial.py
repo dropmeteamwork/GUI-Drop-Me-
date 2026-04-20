@@ -799,12 +799,7 @@ class AutoSerial(QObject):
             self._pending_exit_verification = None
             self._exit_gate_timeout_timer.stop()
             self._log_session_event(direction="STATE", event_name="exit_gate_verification_skipped", note=str(item_type))
-            # Do NOT call _clear_item_evidence() here when CONSIDER_EXIT_GATE=False.
-            # Keeping _current_prediction alive means _has_item_evidence() stays True,
-            # which prevents _on_session_idle_timeout from firing prematurely and ending
-            # the session before the user can insert the next item (Bug 5).
-            # Evidence is cleared naturally by the next recordMlPrediction call, a reject
-            # sequence, or an explicit END_SESSION.
+            self._clear_item_evidence()
             return
         self._pending_exit_verification = {
             "item_type": str(item_type),
