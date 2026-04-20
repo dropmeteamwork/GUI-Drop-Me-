@@ -258,11 +258,26 @@ class RecycleFlowCoordinator(QObject):
 
     def _on_prediction_guard_elapsed(self) -> None:
         self._prediction_guard_elapsed = True
-        if self._prediction_waiting_for_clear or not self._serial_detection_allowed():
+
+        # Case 1: a real hand/fraud block was flagged by onHandBlockStateChanged
+        # *during* the guard window — honour it and enter the hand-wait loop.
+        if self._prediction_waiting_for_clear:
             self.logger.info("Prediction safety window elapsed while hand/gate block is active; waiting for clear")
-            self._prediction_waiting_for_clear = True
             self._start_hand_wait_feedback()
             return
+
+        # Case 2: detection is not allowed for a different reason (session closing,
+        # await_gate_close, stage != "active"). This is NOT a hand block — the session
+        # is simply winding down. Discarding the prediction prevents the spurious
+        # hand popup loop (Bug 6).
+        if not self._serial_detection_allowed():
+            self.logger.info(
+                "Prediction safety window elapsed but session is no longer active; "
+                "discarding pending prediction silently"
+            )
+            self._prediction_applied = True  # prevent any re-trigger
+            return
+
         self._apply_prediction_now()
 
     def _on_hand_wait_timeout(self) -> None:

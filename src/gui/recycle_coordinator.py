@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from PySide6.QtCore import QObject, Property, Signal, Slot
 from PySide6.QtQml import QmlElement
@@ -58,8 +58,11 @@ class RecycleCoordinator(QObject):
             self.logger.warning(f"{method_name}: method not found on target")
             return False
         try:
-            method(*args)
-            return True
+            result = method(*args)
+            # Propagate bool returns (e.g. sendPlastic/sendCan/sendOther now return
+            # bool to signal whether the serial send actually succeeded).
+            # For slots that return None the old True-on-no-exception behaviour is kept.
+            return bool(result) if isinstance(result, bool) else True
         except Exception as exc:
             self.logger.error(f"{method_name} failed: {exc}")
             return False

@@ -38,9 +38,13 @@ class FakeAppState:
 class FakeSerial:
     def __init__(self):
         self.calls = []
+        self.gate_blocked = False
 
     def closeDoor(self):
         self.calls.append(("closeDoor",))
+
+    def isGateBlocked(self):
+        return self.gate_blocked
 
 
 def test_navigate_start_sets_flag_and_routes():
@@ -85,7 +89,6 @@ def test_gate_alarm_shows_remove_hand_popup():
     ui.appState = app
 
     ui.handleHwHandInGate()
-    ui._show_delayed_hand_popup()
 
     assert app.handInGate is True
     assert ("showPopup", "hands", {}) in app.calls
@@ -110,3 +113,21 @@ def test_hw_gate_cleared_with_deferred_signout():
     assert ("clearPopup",) in app.calls
     assert ("closeDoor",) in serial.calls
     assert ("navigateTo", "start", {}) in app.calls
+
+
+def test_hw_gate_cleared_ignored_while_alarm_still_active():
+    app = FakeAppState()
+    serial = FakeSerial()
+    serial.gate_blocked = True
+
+    ui = UiCoordinator()
+    ui.appState = app
+    ui.serial = serial
+
+    app.handInGate = True
+    app.activePopup = "hands"
+
+    ui.handleHwGateCleared()
+
+    assert app.handInGate is True
+    assert ("clearPopup",) not in app.calls

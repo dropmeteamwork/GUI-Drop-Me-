@@ -1,6 +1,6 @@
 ﻿from __future__ import annotations
 
-from PySide6.QtCore import QObject, Property, QTimer, Signal, Slot
+from PySide6.QtCore import QObject, Property, Signal, Slot
 from PySide6.QtQml import QmlElement
 
 from gui.logging import getLogger
@@ -38,10 +38,6 @@ class UiCoordinator(QObject):
         self.logger = getLogger("dropme.ui_coordinator")
         self._app_state: QObject | None = None
         self._serial: QObject | None = None
-        self._hand_popup_timer = QTimer(self)
-        self._hand_popup_timer.setSingleShot(True)
-        self._hand_popup_timer.setInterval(2000)
-        self._hand_popup_timer.timeout.connect(self._show_delayed_hand_popup)
 
     def _invoke(self, obj: QObject | None, method_name: str, *args) -> bool:
         if obj is None:
@@ -187,17 +183,18 @@ class UiCoordinator(QObject):
     def handleHwHandInGate(self) -> None:
         if not self._get_bool("handInGate"):
             self._set_prop("handInGate", True)
-        if not self._hand_popup_timer.isActive():
-            self._hand_popup_timer.start()
-
-    def _show_delayed_hand_popup(self) -> None:
-        if not self._get_bool("handInGate"):
-            return
-        self._invoke(self._app_state, "showPopup", "hands", {})
+        if self._get_str("activePopup") != "hands":
+            self._invoke(self._app_state, "showPopup", "hands", {})
 
     @Slot()
     def handleHwGateCleared(self) -> None:
-        self._hand_popup_timer.stop()
+        if self._serial is not None:
+            try:
+                is_gate_blocked = getattr(self._serial, "isGateBlocked", None)
+                if is_gate_blocked is not None and bool(is_gate_blocked()):
+                    return
+            except Exception as exc:
+                self.logger.warning(f"isGateBlocked failed: {exc}")
         self._set_prop("handInGate", False)
 
         active_popup = self._get_str("activePopup")
@@ -249,4 +246,3 @@ class UiCoordinator(QObject):
         self._invoke(self._serial, "sendSignOut")
         self._set_prop("shouldSignOut", False)
         self._invoke(self._app_state, "navigateTo", "start", {})
-

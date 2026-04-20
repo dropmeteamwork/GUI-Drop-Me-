@@ -731,7 +731,7 @@ class AutoSerial(QObject):
         return self._session_stage in {"await_gate_open", "active", "await_item_drop", "await_reject_done"}
 
     def _is_hand_blocked(self) -> bool:
-        return self._gate_blocked or self._fraud_hold
+        return self._fraud_hold
 
     def _log_immediate_fraud(self, note: str) -> None:
         if self._fraud_logged_for_block:
@@ -774,7 +774,6 @@ class AutoSerial(QObject):
             return
         self._fraud_active = True
         self._log_session_event(direction="FRAUD", event_name="fraud_attempt", note="hand_block_plus_item_evidence_2s")
-        self.handInGate.emit()
 
     def _clear_item_evidence(self) -> None:
         self._current_prediction = ""
@@ -800,7 +799,12 @@ class AutoSerial(QObject):
             self._pending_exit_verification = None
             self._exit_gate_timeout_timer.stop()
             self._log_session_event(direction="STATE", event_name="exit_gate_verification_skipped", note=str(item_type))
-            self._clear_item_evidence()
+            # Do NOT call _clear_item_evidence() here when CONSIDER_EXIT_GATE=False.
+            # Keeping _current_prediction alive means _has_item_evidence() stays True,
+            # which prevents _on_session_idle_timeout from firing prematurely and ending
+            # the session before the user can insert the next item (Bug 5).
+            # Evidence is cleared naturally by the next recordMlPrediction call, a reject
+            # sequence, or an explicit END_SESSION.
             return
         self._pending_exit_verification = {
             "item_type": str(item_type),
@@ -867,7 +871,9 @@ class AutoSerial(QObject):
                 (mcu.ReadCommand.READ_SENSOR, int(mcu.SensorSelector.REJECT_HOME)),
                 (mcu.ReadCommand.READ_SENSOR, int(mcu.SensorSelector.GATE_ALARM)),
                 (mcu.ReadCommand.READ_SENSOR, int(mcu.SensorSelector.DROP_SENSOR)),
-                (mcu.ReadCommand.READ_SENSOR, int(mcu.SensorSelector.EXIT_GATE)),
+                # EXIT_GATE intentionally omitted: sensor reads 1 due to wiring fault;
+                # CONSIDER_EXIT_GATE=False so PC never waits on it — don't query it
+                # so the MCU firmware never sees a "blocked" exit gate before ACCEPT_ITEM.
                 (mcu.ReadCommand.POLL_WEIGHT, None),
             ]
         else:
@@ -875,7 +881,9 @@ class AutoSerial(QObject):
                 (mcu.ReadCommand.POLL_WEIGHT, None),
                 (mcu.ReadCommand.READ_SENSOR, int(mcu.SensorSelector.GATE_ALARM)),
                 (mcu.ReadCommand.READ_SENSOR, int(mcu.SensorSelector.DROP_SENSOR)),
-                (mcu.ReadCommand.READ_SENSOR, int(mcu.SensorSelector.EXIT_GATE)),
+                # EXIT_GATE intentionally omitted: sensor reads 1 due to wiring fault;
+                # CONSIDER_EXIT_GATE=False so PC never waits on it — don't query it
+                # so the MCU firmware never sees a "blocked" exit gate before ACCEPT_ITEM.
             ]
         cmd, payload = sensor_rounds[self._poll_cursor % len(sensor_rounds)]
         self._poll_cursor += 1
@@ -1055,7 +1063,6 @@ class AutoSerial(QObject):
             self._sensor_states["gate_alarm"] = int(sensor_state)
             if self._gate_blocked:
                 self.gateBlocked.emit()
-                self.handInGate.emit()
                 if self._session_stage == "await_gate_close":
                     self._gate_close_deadline = max(self._gate_close_deadline, time.time() + 20.0)
                 elif self._is_detection_stage():
@@ -1356,7 +1363,17 @@ class AutoSerial(QObject):
                         "Ping timeout during fresh active session before first item; keeping session alive"
                     )
                     return
-                if self._session_stage in {"active", "await_item_drop", "await_gate_open", "await_gate_close"}:
+                if self._session_stage == "await_gate_open":
+                    # The MCU is busy executing the START_SESSION motor command and may
+                    # drop a ping ACK during gate opening.  The gate_open_deadline (25 s)
+                    # in _poll_runtime_sensors is the proper watchdog here — a missing
+                    # ping ACK must NOT kill the session prematurely.
+                    self.logger.warning(
+                        "Ping timeout while waiting for gate to open; MCU may be busy with motor — "
+                        "keeping session alive (gate_open_deadline will handle real timeout)"
+                    )
+                    return
+                if self._session_stage in {"active", "await_item_drop", "await_gate_close"}:
                     self.logger.warning(
                         f"Ping timeout during {self._session_stage}; requesting clean end-session instead of dropping the connection"
                     )
@@ -1525,24 +1542,17 @@ class AutoSerial(QObject):
     def _blocked_by_fraud_or_gate(self, reason: str) -> bool:
         """
         This implements your requirement:
-        - physical gate obstruction blocks motion
         - fraud hold (ML hand) blocks motion
+        Gate alarm is sampled right before capture instead of globally blocking motion.
         """
         if self._fraud_hold:
             self.logger.warning(f"FRAUD PREVENTION: {reason} - hand detected (fraud hold)!")
-            # Do NOT emit gateBlocked here (different concept).
-            return True
-        if self._gate_blocked:
-            self.logger.warning(f"Cannot {reason} - gate physically blocked!")
-            self.gateBlocked.emit()
-            self.handInGate.emit()
-            self._append_sensor_event("GATE_BLOCKED", 0)
             return True
         return False
 
     @Slot(result=bool)
     def isDetectionAllowed(self) -> bool:
-        return self._session_stage == "active" and not self._is_hand_blocked()
+        return self._session_stage == "active" and not self._fraud_hold
 
     @Slot(bool)
     def devSetGateAlarmBlocked(self, blocked: bool) -> None:
@@ -1565,15 +1575,7 @@ class AutoSerial(QObject):
         self._apply_sensor_state(int(mcu.SensorSelector.EXIT_GATE), int(bool(passed)), source="dev")
 
     def _start_accept_sequence(self, item_type: str) -> bool:
-        if self._fraud_hold:
-            self.logger.warning(f"FRAUD PREVENTION: accept {item_type} - hand detected (fraud hold)!")
-            return False
-
-        if self._gate_blocked:
-            self.logger.warning(f"Cannot accept {item_type} - gate physically blocked!")
-            self.gateBlocked.emit()
-            self.handInGate.emit()
-            self._append_sensor_event("GATE_BLOCKED", 0)
+        if self._blocked_by_fraud_or_gate(f"accept {item_type}"):
             return False
 
         if self._check_baskets_enabled and item_type == "plastic" and self._bin_plastic_full:
@@ -1608,15 +1610,7 @@ class AutoSerial(QObject):
         return ok
 
     def _start_reject_sequence(self) -> bool:
-        if self._fraud_hold:
-            self.logger.warning("FRAUD PREVENTION: reject item - hand detected (fraud hold)!")
-            return False
-
-        if self._gate_blocked:
-            self.logger.warning("Cannot reject item - gate physically blocked!")
-            self.gateBlocked.emit()
-            self.handInGate.emit()
-            self._append_sensor_event("GATE_BLOCKED", 0)
+        if self._blocked_by_fraud_or_gate("reject item"):
             return False
 
         self.logger.info("Starting reject sequence")
@@ -1645,26 +1639,26 @@ class AutoSerial(QObject):
             return
         self.startOperation()
 
-    @Slot()
-    def sendPlastic(self) -> None:
+    @Slot(result=bool)
+    def sendPlastic(self) -> bool:
         if self._dev_mode and not self.port.isOpen():
             self._dev_sim_accept("plastic")
-            return
-        self._start_accept_sequence("plastic")
+            return True
+        return bool(self._start_accept_sequence("plastic"))
 
-    @Slot()
-    def sendCan(self) -> None:
+    @Slot(result=bool)
+    def sendCan(self) -> bool:
         if self._dev_mode and not self.port.isOpen():
             self._dev_sim_accept("can")
-            return
-        self._start_accept_sequence("can")
+            return True
+        return bool(self._start_accept_sequence("can"))
 
-    @Slot()
-    def sendOther(self) -> None:
+    @Slot(result=bool)
+    def sendOther(self) -> bool:
         if self._dev_mode and not self.port.isOpen():
             self._dev_sim_reject()
-            return
-        self._start_reject_sequence()
+            return True
+        return bool(self._start_reject_sequence())
 
     @Slot()
     def sendSignOut(self) -> None:
@@ -1830,6 +1824,8 @@ class AutoSerial(QObject):
             return
         self.logger.info("[DEV_SIM] REJECT_ITEM -> simulating rejection")
         self._log_session_event(direction="STATE", event_name="dev_sim_reject")
+        self.rejectDone.emit()
+        self.rejectHomeOk.emit()
         self.itemRejected.emit()
 
     def _dev_sim_end_session(self) -> None:
@@ -1852,9 +1848,10 @@ class AutoSerial(QObject):
         self.gateClosed.emit()
         self._end_session()
 
-    @Slot(result=bool)
-    def isProcessing(self) -> bool:
-        return self._session_stage in {"await_item_drop", "await_gate_close"}
+    # NOTE: duplicate isProcessing removed — the authoritative definition is above
+    # (line ~1458) and returns: stage not in {"connected", "disconnected"}
+    # Python MRO means the LAST definition on the class wins, so the old duplicate
+    # at this location was silently overriding the correct one (Bug 1).
 
     # ==================== CLEANUP ====================
 

@@ -13,13 +13,26 @@ Item {
         }
     }
 
-    Resource {
+    Item {
         id: priv
         property int lockNumber: 0
         property string lockPassword: ""
-        name: lockNumber > 0 ? "background-numpad" : AppState.languageCode + "-background-maintenance"
         anchors.fill: parent
-        //Component.onCompleted: Global.serial.getDoorStatus()
+
+        MultilingualResource {
+            visible: priv.lockNumber == 0
+            name: "background-maintenance"
+            anchors.fill: parent
+            fillMode: Image.Stretch
+        }
+
+        Resource {
+            visible: priv.lockNumber > 0
+            name: "background-numpad"
+            anchors.fill: parent
+            fillMode: Image.Stretch
+        }
+
         Resource {
             visible: priv.lockNumber == 0
             name: view.doorStatus & 0b010 ? "button-unlocked" : "button-locked"
@@ -104,4 +117,3 @@ Item {
         }
     }
 }
-

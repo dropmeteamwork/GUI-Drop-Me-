@@ -9,12 +9,26 @@ Item {
     width: 0
     height: 0
     property string pendingCleanupPath: ""
+    property bool captureDeferredByGateAlarm: false
 
     function shouldCaptureNow() {
         return Global.serial.isDetectionAllowed()
             && !controller.view.processingItem
             && !controller.view.waitingPhoneFinishResponse
             && !AppState.recycleHasFinished
+    }
+
+    function _resumeDeferredCapture() {
+        if (!controller.captureDeferredByGateAlarm)
+            return
+        controller.captureDeferredByGateAlarm = false
+        EventBus.hwGateCleared()
+        if (!controller.shouldCaptureNow()) {
+            console.log("[RecycleFlowController] deferred capture cancelled: session no longer ready")
+            return
+        }
+        var capturePath = SystemInfo.getNextCapturePath()
+        controller.captureSource.captureToFile(capturePath)
     }
 
     required property Item view
@@ -88,6 +102,18 @@ Item {
         }
     }
 
+    Timer {
+        id: gateAlarmRetryTimer
+        interval: 150
+        repeat: true
+        onTriggered: {
+            if (Global.serial.isGateBlocked())
+                return
+            gateAlarmRetryTimer.stop()
+            controller._resumeDeferredCapture()
+        }
+    }
+
     Connections {
         target: controller.captureSource
 
@@ -113,6 +139,9 @@ Item {
         }
 
         function onConnectionLost() {
+            gateAlarmRetryTimer.stop()
+            controller.captureDeferredByGateAlarm = false
+            EventBus.hwGateCleared()
             flowCoordinator.onHandBlockStateChanged(false)
             flowCoordinator.onHardwareCycleCompleted()
         }
@@ -189,6 +218,14 @@ Item {
                 console.log("[RecycleFlowController] capture skipped: busy/finished/hand-blocked")
                 return
             }
+            if (Global.serial.isGateBlocked()) {
+                console.log("[RecycleFlowController] capture deferred: gate alarm is active")
+                controller.captureDeferredByGateAlarm = true
+                EventBus.hwHandInGate()
+                if (!gateAlarmRetryTimer.running)
+                    gateAlarmRetryTimer.start()
+                return
+            }
             var capturePath = SystemInfo.getNextCapturePath()
             controller.captureSource.captureToFile(capturePath)
         }
@@ -204,8 +241,9 @@ Item {
     }
 
     Component.onDestruction: {
+        gateAlarmRetryTimer.stop()
+        controller.captureDeferredByGateAlarm = false
         console.log("[RecycleFlowController] component destruction -> stopFlow")
         flowCoordinator.stopFlow()
     }
 }
-

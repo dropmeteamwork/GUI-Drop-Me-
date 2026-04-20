@@ -204,3 +204,38 @@ def test_weight_is_not_item_evidence_by_default():
     serial._current_prediction = ""
 
     assert serial._has_item_evidence() is False
+
+
+def test_detection_allowed_ignores_gate_alarm_block():
+    _app()
+    serial = AutoSerial()
+    serial.scan_timer.stop()
+    serial.ping_timer.stop()
+    serial.bin_poll_timer.stop()
+    serial._sensor_poll_timer.stop()
+
+    serial._session_stage = "active"
+    serial._gate_blocked = True
+    serial._fraud_hold = False
+
+    assert serial.isDetectionAllowed() is True
+
+
+def test_reject_sequence_not_blocked_by_gate_alarm():
+    _app()
+    serial = AutoSerial()
+    serial.scan_timer.stop()
+    serial.ping_timer.stop()
+    serial.bin_poll_timer.stop()
+    serial._sensor_poll_timer.stop()
+
+    serial._session_stage = "active"
+    serial._gate_blocked = True
+
+    sent = []
+    serial._send = lambda cmd, payload=b"": sent.append((cmd, payload)) or True
+
+    ok = serial._start_reject_sequence()
+
+    assert ok is True
+    assert sent == [(int(mcu.SessionControl.REJECT_ITEM), b"\x01")]
