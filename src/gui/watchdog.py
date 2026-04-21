@@ -68,6 +68,11 @@ class Watchdog(QObject):
         result = self._invoke(self._serial, "isStartupSettling")
         return bool(result)
 
+    def _both_recycle_bins_full(self) -> bool:
+        plastic_full = self._invoke(self._app_state, "property", "recyclePlasticBinFull")
+        can_full = self._invoke(self._app_state, "property", "recycleCanBinFull")
+        return bool(plastic_full) and bool(can_full)
+
     def _attempt_recovery(self, reason: str) -> None:
         now = time.monotonic()
         if (now - self._last_recovery) < self._recovery_cooldown_sec:
@@ -76,8 +81,8 @@ class Watchdog(QObject):
         self._last_recovery = now
         self.logger.warning(f"Watchdog recovery attempt for {reason}")
 
-        # Soft UI fallback first
-        self._invoke(self._app_state, "showPopup", "out_of_service", {})
+        if self._both_recycle_bins_full():
+            self._invoke(self._app_state, "showPopup", "out_of_service", {})
 
         # Best-effort serial reset if transport looks unhealthy
         if reason.startswith("SERIAL"):

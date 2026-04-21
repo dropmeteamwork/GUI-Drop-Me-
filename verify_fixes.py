@@ -157,7 +157,7 @@ def test_bug7_active_graceful():
 
     for idx, (lineno, line) in enumerate(method_lines):
         stripped = line.strip()
-        if '"active"' in stripped and '"await_item_drop"' in stripped and first_active_check is None:
+        if '"active"' in stripped and '"await_reject_done"' in stripped and first_active_check is None:
             first_active_check = lineno
             # Check the NEXT code line
             for _, next_line in method_lines[idx+1:]:
@@ -170,13 +170,13 @@ def test_bug7_active_graceful():
         if '"basket_precheck"' in stripped and first_precheck_check is None:
             first_precheck_check = lineno
 
-    assert first_active_check is not None, "Could not find active/await_item_drop check"
+    assert first_active_check is not None, "Could not find active/await_reject_done check"
     assert first_precheck_check is not None, "Could not find basket_precheck check"
     assert first_active_check < first_precheck_check, \
         f"Active (line {first_active_check}) must come BEFORE precheck (line {first_precheck_check})"
     assert active_uses_graceful, "Active stage must use _request_end_session() (graceful)"
 
-    print(f"    OK: active/await_item_drop -> _request_end_session() at line {first_active_check}")
+    print(f"    OK: active/await_reject_done -> _request_end_session() at line {first_active_check}")
     print(f"    OK: basket_precheck/await_gate_open -> forced at line {first_precheck_check}")
     print(f"    OK: No unreachable code")
 

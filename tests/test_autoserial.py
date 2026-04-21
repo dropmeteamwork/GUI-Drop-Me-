@@ -91,6 +91,17 @@ def test_gate_open_confirmed_waits_for_first_item_before_starting_idle_timeout()
     assert serial._session_idle_timer.isActive() is False
 
 
+def test_session_idle_timeout_interval_is_30_seconds():
+    _app()
+    serial = AutoSerial()
+    serial.scan_timer.stop()
+    serial.ping_timer.stop()
+    serial.bin_poll_timer.stop()
+    serial._sensor_poll_timer.stop()
+
+    assert serial._session_idle_timer.interval() == 30000
+
+
 def test_ping_timeout_during_fresh_active_session_keeps_session_alive():
     _app()
     serial = AutoSerial()
@@ -116,6 +127,35 @@ def test_ping_timeout_during_fresh_active_session_keeps_session_alive():
 
     assert serial._session_stage == "active"
     assert serial._pending_requests == deque()
+
+
+def test_ping_timeout_during_active_session_does_not_force_end():
+    _app()
+    serial = AutoSerial()
+    serial.scan_timer.stop()
+    serial.ping_timer.stop()
+    serial.bin_poll_timer.stop()
+    serial._sensor_poll_timer.stop()
+
+    serial._session_stage = "active"
+    serial._awaiting_first_item_after_gate_open = False
+    forced = []
+    serial._request_forced_end_session = lambda: forced.append("forced")
+    serial._pending_requests.append(
+        {
+            "cmd": int(mcu.SystemControl.PING),
+            "payload": b"",
+            "expected": (int(mcu.ResponseCode.ACK),),
+            "sent_at": 0.0,
+            "deadline": 0.0,
+            "stage": "active",
+        }
+    )
+
+    serial._on_command_timeout()
+
+    assert serial._session_stage == "active"
+    assert forced == []
 
 
 def test_reject_sequence_returns_to_active_immediately():
@@ -170,24 +210,6 @@ def test_accept_sequence_returns_to_active_immediately_when_item_dropped_disable
     assert serial._session_stage == "active"
     assert plastic_hits == ["plastic"]
     assert conveyor_hits == ["done"]
-    assert serial._pending_exit_verification is None
-
-
-def test_exit_gate_verification_is_skipped_by_default():
-    _app()
-    serial = AutoSerial()
-    serial.scan_timer.stop()
-    serial.ping_timer.stop()
-    serial.bin_poll_timer.stop()
-    serial._sensor_poll_timer.stop()
-
-    serial._current_prediction = "aluminum"
-    serial._current_prediction_confidence = 1.0
-    serial._last_weight_grams = 20
-
-    serial._start_exit_gate_verification("can")
-
-    assert serial._pending_exit_verification is None
     assert serial._last_weight_grams == 0
     assert serial._current_prediction == ""
 
@@ -239,3 +261,26 @@ def test_reject_sequence_not_blocked_by_gate_alarm():
 
     assert ok is True
     assert sent == [(int(mcu.SessionControl.REJECT_ITEM), b"\x01")]
+
+
+def test_maintenance_door_commands_use_crc_framed_command_ids():
+    _app()
+    serial = AutoSerial()
+    serial.scan_timer.stop()
+    serial.ping_timer.stop()
+    serial.bin_poll_timer.stop()
+    serial._sensor_poll_timer.stop()
+
+    sent = []
+    serial._send = lambda cmd, payload=b"": sent.append((int(cmd), payload)) or True
+
+    serial.sendOpenDoor()
+    serial.doorToggle(2)
+    serial.doorToggle(3)
+    serial.doorToggle(99)
+
+    assert sent == [
+        (int(mcu.MaintenanceDoorControl.OPEN_DOOR_1), b""),
+        (int(mcu.MaintenanceDoorControl.OPEN_DOOR_2), b""),
+        (int(mcu.MaintenanceDoorControl.OPEN_DOOR_3), b""),
+    ]

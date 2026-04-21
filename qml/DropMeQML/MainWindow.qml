@@ -55,7 +55,6 @@ Window {
         function onGateClosed() { runtimeWatchdog.beatBackend(); EventBus.hwGateCleared() }
         function onBinFull(binName) { runtimeWatchdog.beatBackend(); EventBus.hwBinFull(binName) }
         function onBasketStateChanged(binName, isFull) { runtimeWatchdog.beatBackend(); EventBus.hwBasketState(binName, isFull) }
-        function onAcceptedItemRollback(itemType) { runtimeWatchdog.beatBackend(); EventBus.hwAcceptedItemRollback(itemType) }
         function onErrorOccurred(errorName, errorId) { runtimeWatchdog.beatBackend(); EventBus.hwError(errorName, errorId) }
     }
 

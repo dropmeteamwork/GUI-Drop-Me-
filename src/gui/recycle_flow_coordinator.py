@@ -8,6 +8,7 @@ from gui.logging import getLogger
 QML_IMPORT_NAME = "DropMe"
 QML_IMPORT_MAJOR_VERSION = 1
 QML_IMPORT_MINOR_VERSION = 0
+MIN_CAPTURE_REJECT_WEIGHT_GRAMS = 10
 
 
 @QmlElement
@@ -53,6 +54,7 @@ class RecycleFlowCoordinator(QObject):
         self._def_user_type = 0
         self._def_phone = ""
         self._cleanup_path = ""
+        self._last_capture_weight_grams = 0
         self._prediction_applied = False
         self._prediction_waiting_for_clear = False
         self._holding_capture_until_completion = False
@@ -185,8 +187,8 @@ class RecycleFlowCoordinator(QObject):
         self._prediction_waiting_for_clear = False
         self._holding_capture_until_completion = False
         self._prediction_guard_elapsed = False
+        self._last_capture_weight_grams = 0
 
-        self._invoke(self._serial, "sendSignOut")
         self._invoke(self._app_state, "endRecycleSession")
 
     def _show_prediction_capture(self) -> None:
@@ -252,6 +254,7 @@ class RecycleFlowCoordinator(QObject):
 
         if not self._holding_capture_until_completion:
             self._restore_camera_if_possible()
+        self._last_capture_weight_grams = 0
 
     def _prediction_needs_guard(self) -> bool:
         return self._def_pred in {"plastic", "aluminum", "other"}
@@ -276,6 +279,7 @@ class RecycleFlowCoordinator(QObject):
                 "discarding pending prediction silently"
             )
             self._prediction_applied = True  # prevent any re-trigger
+            self._last_capture_weight_grams = 0
             return
 
         self._apply_prediction_now()
@@ -330,8 +334,17 @@ class RecycleFlowCoordinator(QObject):
     @Slot("QVariant", int, str, str)
     def onPredictionReady(self, results, user_type: int, phone_number: str, cleanup_path: str = "") -> None:
         result_list = list(results) if isinstance(results, (list, tuple)) else []
-        self._def_pred = str(result_list[0]) if len(result_list) > 0 else ""
-        self._def_pred_image = str(result_list[1]) if len(result_list) > 1 else ""
+        prediction = str(result_list[0]) if len(result_list) > 0 else ""
+        prediction_image = str(result_list[1]) if len(result_list) > 1 else ""
+        if prediction.strip().lower() in {"", "none"} and self._last_capture_weight_grams > MIN_CAPTURE_REJECT_WEIGHT_GRAMS:
+            self.logger.info(
+                f"No ML detection but pre-capture weight is {self._last_capture_weight_grams}g; rejecting as other"
+            )
+            prediction = "other"
+            prediction_image = ""
+            cleanup_path = ""
+        self._def_pred = prediction
+        self._def_pred_image = prediction_image
         self._def_user_type = int(user_type)
         self._def_phone = str(phone_number or "")
         self._cleanup_path = str(cleanup_path or "")
@@ -342,6 +355,10 @@ class RecycleFlowCoordinator(QObject):
         self._prediction_guard_timer.stop()
         self._hand_wait_timer.stop()
         self._deferral_timer.start()
+
+    @Slot(int)
+    def setLastCaptureWeightGrams(self, weight_grams: int) -> None:
+        self._last_capture_weight_grams = max(0, int(weight_grams))
 
     def _apply_deferred_prediction(self) -> None:
         self._show_prediction_capture()

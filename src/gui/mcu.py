@@ -51,6 +51,12 @@ class SessionControl(IntEnum):
     END_SESSION = 0x64
 
 
+class MaintenanceDoorControl(IntEnum):
+    OPEN_DOOR_1 = 0x65
+    OPEN_DOOR_2 = 0x66
+    OPEN_DOOR_3 = 0x67
+
+
 class AsyncEvent(IntEnum):
     STATUS_OK = 0x70
     ITEM_PLACED = 0x71
@@ -195,6 +201,7 @@ def get_command_name(cmd: int) -> str:
         ReadCommand,
         DeviceControl,
         SessionControl,
+        MaintenanceDoorControl,
         AsyncEvent,
         ResponseCode,
     ]:
@@ -357,6 +364,9 @@ KNOWN_TX_FRAMES: dict[tuple[int, bytes], bytes] = {
     (int(SessionControl.ACCEPT_ITEM), bytes([int(ItemType.ALUMINUM)])): build_frame_bytes(SessionControl.ACCEPT_ITEM, bytes([int(ItemType.ALUMINUM)])),
     (int(SessionControl.REJECT_ITEM), b"\x01"): build_frame_bytes(SessionControl.REJECT_ITEM, b"\x01"),
     (int(SessionControl.END_SESSION), b""): build_frame_bytes(SessionControl.END_SESSION),
+    (int(MaintenanceDoorControl.OPEN_DOOR_1), b""): build_frame_bytes(MaintenanceDoorControl.OPEN_DOOR_1),
+    (int(MaintenanceDoorControl.OPEN_DOOR_2), b""): build_frame_bytes(MaintenanceDoorControl.OPEN_DOOR_2),
+    (int(MaintenanceDoorControl.OPEN_DOOR_3), b""): build_frame_bytes(MaintenanceDoorControl.OPEN_DOOR_3),
     (int(ReadCommand.READ_SENSOR), bytes([int(SensorSelector.SORT_PLASTIC)])): build_frame_bytes(ReadCommand.READ_SENSOR, bytes([int(SensorSelector.SORT_PLASTIC)])),
     (int(ReadCommand.READ_SENSOR), bytes([int(SensorSelector.SORT_ALUMINUM)])): build_frame_bytes(ReadCommand.READ_SENSOR, bytes([int(SensorSelector.SORT_ALUMINUM)])),
     (int(ReadCommand.READ_SENSOR), bytes([int(SensorSelector.GATE_CLOSED)])): build_frame_bytes(ReadCommand.READ_SENSOR, bytes([int(SensorSelector.GATE_CLOSED)])),

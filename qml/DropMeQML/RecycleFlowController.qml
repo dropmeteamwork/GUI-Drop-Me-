@@ -10,12 +10,35 @@ Item {
     height: 0
     property string pendingCleanupPath: ""
     property bool captureDeferredByGateAlarm: false
+    property bool weighingBeforeCapture: false
+    property int pendingCaptureWeightGrams: 0
 
     function shouldCaptureNow() {
         return Global.serial.isDetectionAllowed()
             && !controller.view.processingItem
             && !controller.view.waitingPhoneFinishResponse
+            && !controller.weighingBeforeCapture
             && !AppState.recycleHasFinished
+    }
+
+    function _captureNowWithWeight(weightGrams) {
+        controller.weighingBeforeCapture = false
+        controller.pendingCaptureWeightGrams = Math.max(0, Number(weightGrams) || 0)
+        flowCoordinator.setLastCaptureWeightGrams(controller.pendingCaptureWeightGrams)
+        if (!controller.shouldCaptureNow()) {
+            console.log("[RecycleFlowController] weighted capture cancelled: session no longer ready")
+            return
+        }
+        var capturePath = SystemInfo.getNextCapturePath()
+        controller.captureSource.captureToFile(capturePath)
+    }
+
+    function _startWeightedCapture() {
+        controller.weighingBeforeCapture = true
+        controller.pendingCaptureWeightGrams = 0
+        Global.serial.pollWeight()
+        if (!captureWeightTimeoutTimer.running)
+            captureWeightTimeoutTimer.start()
     }
 
     function _resumeDeferredCapture() {
@@ -27,8 +50,7 @@ Item {
             console.log("[RecycleFlowController] deferred capture cancelled: session no longer ready")
             return
         }
-        var capturePath = SystemInfo.getNextCapturePath()
-        controller.captureSource.captureToFile(capturePath)
+        controller._startWeightedCapture()
     }
 
     required property Item view
@@ -114,6 +136,18 @@ Item {
         }
     }
 
+    Timer {
+        id: captureWeightTimeoutTimer
+        interval: 1200
+        repeat: false
+        onTriggered: {
+            if (!controller.weighingBeforeCapture)
+                return
+            console.log("[RecycleFlowController] weight read timed out before capture; continuing with 0g")
+            controller._captureNowWithWeight(0)
+        }
+    }
+
     Connections {
         target: controller.captureSource
 
@@ -140,7 +174,9 @@ Item {
 
         function onConnectionLost() {
             gateAlarmRetryTimer.stop()
+            captureWeightTimeoutTimer.stop()
             controller.captureDeferredByGateAlarm = false
+            controller.weighingBeforeCapture = false
             EventBus.hwGateCleared()
             flowCoordinator.onHandBlockStateChanged(false)
             flowCoordinator.onHardwareCycleCompleted()
@@ -160,6 +196,13 @@ Item {
 
         function onRejectHomeOk() {
             flowCoordinator.onHardwareCycleCompleted()
+        }
+
+        function onWeightReceived(weightGrams) {
+            if (!controller.weighingBeforeCapture)
+                return
+            captureWeightTimeoutTimer.stop()
+            controller._captureNowWithWeight(weightGrams)
         }
     }
 
@@ -226,8 +269,7 @@ Item {
                     gateAlarmRetryTimer.start()
                 return
             }
-            var capturePath = SystemInfo.getNextCapturePath()
-            controller.captureSource.captureToFile(capturePath)
+            controller._startWeightedCapture()
         }
 
         function onSessionClockFinished() {
@@ -242,7 +284,9 @@ Item {
 
     Component.onDestruction: {
         gateAlarmRetryTimer.stop()
+        captureWeightTimeoutTimer.stop()
         controller.captureDeferredByGateAlarm = false
+        controller.weighingBeforeCapture = false
         console.log("[RecycleFlowController] component destruction -> stopFlow")
         flowCoordinator.stopFlow()
     }

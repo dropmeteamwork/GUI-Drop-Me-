@@ -9,6 +9,8 @@ class FakeAppState:
         self.shouldSignOut = False
         self.activePopup = ""
         self.language = 1
+        self.recyclePlasticBinFull = False
+        self.recycleCanBinFull = False
         self.calls = []
 
     def property(self, name):
@@ -32,7 +34,18 @@ class FakeAppState:
         self.calls.append(("startRecycleSession",))
 
     def markRecycleBinFull(self, name):
+        if "plastic" in str(name).lower():
+            self.recyclePlasticBinFull = True
+        if "can" in str(name).lower():
+            self.recycleCanBinFull = True
         self.calls.append(("markRecycleBinFull", name))
+
+    def setRecycleBinState(self, name, is_full):
+        if "plastic" in str(name).lower():
+            self.recyclePlasticBinFull = bool(is_full)
+        if "can" in str(name).lower():
+            self.recycleCanBinFull = bool(is_full)
+        self.calls.append(("setRecycleBinState", name, is_full))
 
 
 class FakeSerial:
@@ -131,3 +144,31 @@ def test_hw_gate_cleared_ignored_while_alarm_still_active():
 
     assert app.handInGate is True
     assert ("clearPopup",) not in app.calls
+
+
+def test_new_user_failed_does_not_show_out_of_service_unless_both_bins_full():
+    app = FakeAppState()
+    ui = UiCoordinator()
+    ui.appState = app
+
+    ui.handleNewUserFailed(False)
+
+    assert ("showPopup", "out_of_service", {}) not in app.calls
+
+    app.recyclePlasticBinFull = True
+    app.recycleCanBinFull = True
+    ui.handleNewUserFailed(False)
+
+    assert ("showPopup", "out_of_service", {}) in app.calls
+
+
+def test_basket_state_shows_out_of_service_only_when_plastic_and_can_are_full():
+    app = FakeAppState()
+    ui = UiCoordinator()
+    ui.appState = app
+
+    ui.handleHwBasketState("Plastic", True)
+    assert ("showPopup", "out_of_service", {}) not in app.calls
+
+    ui.handleHwBasketState("Can", True)
+    assert ("showPopup", "out_of_service", {}) in app.calls

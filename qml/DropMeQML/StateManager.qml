@@ -151,7 +151,6 @@ Item {
         function onHwGateCleared() { uiCoordinator.handleHwGateCleared() }
         function onHwBinFull(binName) { uiCoordinator.handleHwBinFull(binName) }
         function onHwBasketState(binName, isFull) { uiCoordinator.handleHwBasketState(binName, isFull) }
-        function onHwAcceptedItemRollback(itemType) { uiCoordinator.handleAcceptedItemRollback(itemType) }
         function onHwError(errorName, errorId) { uiCoordinator.handleHwError(errorName, errorId) }
     }
 

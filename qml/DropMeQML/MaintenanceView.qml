@@ -84,10 +84,10 @@ Item {
             onEnterPressed: {
                 if (priv.lockPassword == "3101") {
                     Global.server.updateGUI()
-                } else if (priv.lockNumber == 1 && priv.lockPassword == "1993") {
+                } else if (priv.lockNumber == 1 && priv.lockPassword == "6666") {
                     Global.serial.sendOpenDoor()
                     view.doorStatus |= 2
-                } else if (priv.lockNumber == 2 && priv.lockPassword == "1117") {
+                } else if (priv.lockNumber == 2 && priv.lockPassword == "6666") {
                     Global.serial.doorToggle(2)
                     view.doorStatus |= 1
                 } else if (priv.lockNumber == 3 && priv.lockPassword == "6666") {

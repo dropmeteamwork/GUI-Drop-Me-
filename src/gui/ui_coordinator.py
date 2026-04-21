@@ -71,6 +71,13 @@ class UiCoordinator(QObject):
         except Exception:
             return ""
 
+    def _both_recycle_bins_full(self) -> bool:
+        return self._get_bool("recyclePlasticBinFull") and self._get_bool("recycleCanBinFull")
+
+    def _show_out_of_service_if_both_bins_full(self) -> None:
+        if self._both_recycle_bins_full():
+            self._invoke(self._app_state, "showPopup", "out_of_service", {})
+
     def _set_prop(self, name: str, value) -> None:
         if self._app_state is None:
             return
@@ -125,7 +132,6 @@ class UiCoordinator(QObject):
             self._invoke(self._app_state, "startRecycleSession")
 
         if route_name == "start":
-            self._invoke(self._serial, "sendSignOut")
             self._set_prop("shouldSignOut", False)
 
         self._invoke(self._app_state, "navigateTo", route_name, data)
@@ -171,11 +177,10 @@ class UiCoordinator(QObject):
     def handleNewUserFailed(self, is_dev: bool) -> None:
         if bool(is_dev):
             return
-        self._invoke(self._app_state, "showPopup", "out_of_service", {})
+        self._show_out_of_service_if_both_bins_full()
 
     @Slot()
     def handleResetToStart(self) -> None:
-        self._invoke(self._serial, "sendSignOut")
         self._set_prop("shouldSignOut", False)
         self._invoke(self._app_state, "navigateTo", "start", {})
 
@@ -209,20 +214,12 @@ class UiCoordinator(QObject):
     @Slot(str)
     def handleHwBinFull(self, bin_name: str) -> None:
         self._invoke(self._app_state, "markRecycleBinFull", str(bin_name or ""))
+        self._show_out_of_service_if_both_bins_full()
 
     @Slot(str, bool)
     def handleHwBasketState(self, bin_name: str, is_full: bool) -> None:
         self._invoke(self._app_state, "setRecycleBinState", str(bin_name or ""), bool(is_full))
-
-    @Slot(str)
-    def handleAcceptedItemRollback(self, item_type: str) -> None:
-        normalized = str(item_type or "").strip().lower()
-        if normalized == "plastic":
-            self._invoke(self._app_state, "decrementRecyclePlastic")
-            return
-        if normalized in ("can", "aluminum"):
-            self._invoke(self._app_state, "decrementRecycleCans")
-            return
+        self._show_out_of_service_if_both_bins_full()
 
     @Slot(str, int)
     def handleHwError(self, error_name: str, _error_id: int) -> None:
@@ -235,8 +232,8 @@ class UiCoordinator(QObject):
         if str(error_name or "") not in critical_errors:
             self.logger.info(f"Ignoring non-critical hardware error for popup: {error_name}")
             return
-        self._invoke(self._serial, "sendSignOut")
-        self._invoke(self._app_state, "showPopup", "out_of_service", {})
+        self.logger.warning(f"Hardware error received without forcing out-of-service: {error_name}")
+        self._show_out_of_service_if_both_bins_full()
 
     @Slot()
     def requestReturnToStart(self) -> None:

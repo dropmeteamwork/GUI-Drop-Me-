@@ -34,8 +34,6 @@ QML_IMPORT_NAME = "DropMe"
 QML_IMPORT_MAJOR_VERSION = 1
 QML_IMPORT_MINOR_VERSION = 0
 MIN_ITEM_WEIGHT_GRAMS = 10
-CONSIDER_ITEM_DROPPED = str(os.environ.get("DROPME_CONSIDER_ITEM_DROPPED", "0")).strip().lower() in ("1", "true", "yes", "on")
-CONSIDER_EXIT_GATE = str(os.environ.get("DROPME_CONSIDER_EXIT_GATE", "0")).strip().lower() in ("1", "true", "yes", "on")
 CONSIDER_WEIGHT = str(os.environ.get("DROPME_CONSIDER_WEIGHT", "0")).strip().lower() in ("1", "true", "yes", "on")
 
 
@@ -70,7 +68,6 @@ class AutoSerial(QObject):
     weightReceived = Signal(int)
     binFull = Signal(str)
     basketStateChanged = Signal(str, bool)
-    acceptedItemRollback = Signal(str)
 
     # Errors
     errorOccurred = Signal(str, int)
@@ -116,7 +113,6 @@ class AutoSerial(QObject):
         self._fraud_active = False
         self._fraud_logged_for_block = False
         self._poll_cursor = 0
-        self._pending_exit_verification: dict | None = None
         self._reject_clear_polls = 0
         self._startup_scan_started_at = time.monotonic()
         self._awaiting_first_item_after_gate_open = False
@@ -150,7 +146,7 @@ class AutoSerial(QObject):
 
         self._session_idle_timer = QTimer(self)
         self._session_idle_timer.setSingleShot(True)
-        self._session_idle_timer.setInterval(10000)
+        self._session_idle_timer.setInterval(30000)
         self._session_idle_timer.timeout.connect(self._on_session_idle_timeout)
 
         self._sensor_poll_timer = QTimer(self)
@@ -161,11 +157,6 @@ class AutoSerial(QObject):
         self._fraud_timer.setSingleShot(True)
         self._fraud_timer.setInterval(2000)
         self._fraud_timer.timeout.connect(self._on_fraud_timeout)
-
-        self._exit_gate_timeout_timer = QTimer(self)
-        self._exit_gate_timeout_timer.setSingleShot(True)
-        self._exit_gate_timeout_timer.setInterval(3000)
-        self._exit_gate_timeout_timer.timeout.connect(self._on_exit_gate_timeout)
 
         # ==================== Telemetry Service ====================
         project_root = Path(__file__).resolve().parents[1]
@@ -418,8 +409,7 @@ class AutoSerial(QObject):
         if self.port.isOpen():
             self._send(mcu.SystemControl.PING)
             if self.last_response_time > 0 and (time.time() - self.last_response_time) > 30:
-                self.logger.warning("Connection timeout")
-                self._handle_disconnect()
+                self.logger.warning("Connection timeout observed; keeping the active session state intact")
 
     def _poll_bin_status(self) -> None:
         self.logger.info("Bin status poll (12h interval)")
@@ -471,7 +461,6 @@ class AutoSerial(QObject):
         self._fraud_active = False
         self._fraud_logged_for_block = False
         self._pending_requests.clear()
-        self._pending_exit_verification = None
         self._reject_clear_polls = 0
         self._awaiting_first_item_after_gate_open = False
         self._sensor_states.update({
@@ -490,7 +479,6 @@ class AutoSerial(QObject):
         self._session_idle_timer.stop()
         self._sensor_poll_timer.stop()
         self._fraud_timer.stop()
-        self._exit_gate_timeout_timer.stop()
 
     def _apply_basket_state(self, bin_name: str, is_full: bool, *, emit_event: bool, source: str) -> None:
         normalized = str(bin_name or "").strip().lower()
@@ -628,10 +616,6 @@ class AutoSerial(QObject):
         elif cmd == int(mcu.SessionControl.REQUEST_SEQUENCE_STATUS):
             expected = (int(mcu.AsyncEvent.STATUS_OK),)
             timeout_s = 3.0
-        elif cmd == int(mcu.SessionControl.ACCEPT_ITEM):
-            if CONSIDER_ITEM_DROPPED:
-                expected = (int(mcu.AsyncEvent.ITEM_DROPPED),)
-                timeout_s = 5.0
         elif cmd == int(mcu.SessionControl.END_SESSION):
             expected = (int(mcu.AsyncEvent.BASKET_STATUS),)
             timeout_s = 5.0
@@ -715,7 +699,7 @@ class AutoSerial(QObject):
         return removed
 
     def _restart_session_idle_timer(self) -> None:
-        if self._session_stage in {"active", "await_item_drop", "await_reject_done"}:
+        if self._session_stage in {"active", "await_reject_done"}:
             if self._session_stage == "active" and self._awaiting_first_item_after_gate_open:
                 return
             self._session_idle_timer.start()
@@ -728,7 +712,7 @@ class AutoSerial(QObject):
         self._restart_session_idle_timer()
 
     def _is_detection_stage(self) -> bool:
-        return self._session_stage in {"await_gate_open", "active", "await_item_drop", "await_reject_done"}
+        return self._session_stage in {"await_gate_open", "active", "await_reject_done"}
 
     def _is_hand_blocked(self) -> bool:
         return self._fraud_hold
@@ -794,38 +778,6 @@ class AutoSerial(QObject):
         self.rejectHomeOk.emit()
         self.itemRejected.emit()
 
-    def _start_exit_gate_verification(self, item_type: str) -> None:
-        if not CONSIDER_EXIT_GATE:
-            self._pending_exit_verification = None
-            self._exit_gate_timeout_timer.stop()
-            self._log_session_event(direction="STATE", event_name="exit_gate_verification_skipped", note=str(item_type))
-            self._clear_item_evidence()
-            return
-        self._pending_exit_verification = {
-            "item_type": str(item_type),
-            "started_at": time.time(),
-        }
-        self._exit_gate_timeout_timer.start()
-        self._log_session_event(direction="STATE", event_name="exit_gate_verification_started", note=str(item_type))
-
-    def _confirm_exit_gate_passed(self) -> None:
-        if self._pending_exit_verification is None:
-            return
-        item_type = self._pending_exit_verification["item_type"]
-        self._pending_exit_verification = None
-        self._exit_gate_timeout_timer.stop()
-        self._log_session_event(direction="STATE", event_name="exit_gate_passed", note=str(item_type))
-        self._clear_item_evidence()
-
-    def _on_exit_gate_timeout(self) -> None:
-        if self._pending_exit_verification is None:
-            return
-        item_type = str(self._pending_exit_verification["item_type"])
-        self._pending_exit_verification = None
-        self._log_session_event(direction="FRAUD", event_name="fraud_attempt", note=f"exit_gate_not_reached:{item_type}")
-        self.acceptedItemRollback.emit(item_type)
-        self._clear_item_evidence()
-
     def _poll_runtime_sensors(self) -> None:
         if not self.port.isOpen():
             return
@@ -858,7 +810,7 @@ class AutoSerial(QObject):
                 self._end_session()
             return
 
-        if self._session_stage not in {"active", "await_item_drop", "await_reject_done"}:
+        if self._session_stage not in {"active", "await_reject_done"}:
             return
 
         if self._session_stage == "await_reject_done":
@@ -866,9 +818,6 @@ class AutoSerial(QObject):
                 (mcu.ReadCommand.READ_SENSOR, int(mcu.SensorSelector.REJECT_HOME)),
                 (mcu.ReadCommand.READ_SENSOR, int(mcu.SensorSelector.GATE_ALARM)),
                 (mcu.ReadCommand.READ_SENSOR, int(mcu.SensorSelector.DROP_SENSOR)),
-                # EXIT_GATE intentionally omitted: sensor reads 1 due to wiring fault;
-                # CONSIDER_EXIT_GATE=False so PC never waits on it — don't query it
-                # so the MCU firmware never sees a "blocked" exit gate before ACCEPT_ITEM.
                 (mcu.ReadCommand.POLL_WEIGHT, None),
             ]
         else:
@@ -876,9 +825,6 @@ class AutoSerial(QObject):
                 (mcu.ReadCommand.POLL_WEIGHT, None),
                 (mcu.ReadCommand.READ_SENSOR, int(mcu.SensorSelector.GATE_ALARM)),
                 (mcu.ReadCommand.READ_SENSOR, int(mcu.SensorSelector.DROP_SENSOR)),
-                # EXIT_GATE intentionally omitted: sensor reads 1 due to wiring fault;
-                # CONSIDER_EXIT_GATE=False so PC never waits on it — don't query it
-                # so the MCU firmware never sees a "blocked" exit gate before ACCEPT_ITEM.
             ]
         cmd, payload = sensor_rounds[self._poll_cursor % len(sensor_rounds)]
         self._poll_cursor += 1
@@ -981,7 +927,7 @@ class AutoSerial(QObject):
         self._end_session()
 
     def _request_end_session(self) -> None:
-        if self._session_stage not in {"active", "await_item_drop", "await_reject_done"}:
+        if self._session_stage not in {"active", "await_reject_done"}:
             return
         self._session_stage = "await_gate_close"
         self._session_idle_timer.stop()
@@ -1075,8 +1021,6 @@ class AutoSerial(QObject):
 
         if sensor_id == int(mcu.SensorSelector.EXIT_GATE):
             self._sensor_states["exit_gate"] = int(sensor_state)
-            if sensor_state:
-                self._confirm_exit_gate_passed()
             return
 
         if sensor_id == int(mcu.SensorSelector.DROP_SENSOR):
@@ -1312,20 +1256,7 @@ class AutoSerial(QObject):
             return
 
         if cmd == mcu.AsyncEvent.ITEM_DROPPED:
-            pending = self._pop_pending_for_response(int(mcu.AsyncEvent.ITEM_DROPPED))
-            item_type = None
-            if pending is not None and pending["payload"]:
-                item_type = pending["payload"][0]
-            if item_type == int(mcu.ItemType.PLASTIC):
-                self.plasticAccepted.emit()
-                self._start_exit_gate_verification("plastic")
-            elif item_type == int(mcu.ItemType.ALUMINUM):
-                self.canAccepted.emit()
-                self._start_exit_gate_verification("can")
-            self.conveyorDone.emit()
-            self._session_stage = "active"
-            self._restart_session_idle_timer()
-            self.logger.info("ITEM_DROPPED event received")
+            self.logger.info("ITEM_DROPPED event received after accept completion; ignoring")
             return
 
         if cmd == mcu.AsyncEvent.BASKET_STATUS:
@@ -1361,18 +1292,17 @@ class AutoSerial(QObject):
                 if self._session_stage == "await_gate_open":
                     # The MCU is busy executing the START_SESSION motor command and may
                     # drop a ping ACK during gate opening.  The gate_open_deadline (25 s)
-                    # in _poll_runtime_sensors is the proper watchdog here — a missing
+                    # in _poll_runtime_sensors is the proper watchdog here - a missing
                     # ping ACK must NOT kill the session prematurely.
                     self.logger.warning(
-                        "Ping timeout while waiting for gate to open; MCU may be busy with motor — "
+                        "Ping timeout while waiting for gate to open; MCU may be busy with motor - "
                         "keeping session alive (gate_open_deadline will handle real timeout)"
                     )
                     return
-                if self._session_stage in {"active", "await_item_drop", "await_gate_close"}:
+                if self._session_stage in {"active", "await_gate_close"}:
                     self.logger.warning(
-                        f"Ping timeout during {self._session_stage}; requesting clean end-session instead of dropping the connection"
+                        f"Ping timeout during {self._session_stage}; keeping session alive"
                     )
-                    self._request_forced_end_session()
                     return
                 self._handle_disconnect()
                 return
@@ -1446,7 +1376,7 @@ class AutoSerial(QObject):
     def isStartupSettling(self) -> bool:
         if self._dev_mode:
             # In dev mode we never connect to a port, so tell the watchdog we're
-            # always settling — suppressing SERIAL_DISCONNECTED_TIMEOUT forever.
+            # always settling - suppressing SERIAL_DISCONNECTED_TIMEOUT forever.
             return True
         return (not self.port.isOpen()) and ((time.monotonic() - self._startup_scan_started_at) < 45.0)
 
@@ -1507,7 +1437,7 @@ class AutoSerial(QObject):
     def endOperation(self) -> None:
         self.logger.info("Ending operation")
         self._credentials_timeout_timer.stop()
-        if self._session_stage in {"active", "await_item_drop", "await_reject_done"}:
+        if self._session_stage in {"active", "await_reject_done"}:
             self._request_end_session()
             return
         if self._session_stage in {"basket_precheck", "await_gate_open"}:
@@ -1559,16 +1489,6 @@ class AutoSerial(QObject):
         self._append_sensor_event("DEV_GATE_ALARM", int(bool(blocked)), {"source": "dev"})
         self._apply_sensor_state(int(mcu.SensorSelector.GATE_ALARM), int(bool(blocked)), source="dev")
 
-    @Slot(bool)
-    def devSetExitGatePassed(self, passed: bool) -> None:
-        if not self._allow_local_sensor_override:
-            self.logger.warning("Local sensor override is disabled; use the MCU simulator for parity testing or set DROPME_DEV_LOCAL_SENSOR_OVERRIDE=1 for non-parity shortcuts")
-            return
-        if not self.port.isOpen():
-            return
-        self._append_sensor_event("DEV_EXIT_GATE", int(bool(passed)), {"source": "dev"})
-        self._apply_sensor_state(int(mcu.SensorSelector.EXIT_GATE), int(bool(passed)), source="dev")
-
     def _start_accept_sequence(self, item_type: str) -> bool:
         if self._blocked_by_fraud_or_gate(f"accept {item_type}"):
             return False
@@ -1586,22 +1506,17 @@ class AutoSerial(QObject):
         payload = bytes([
             int(mcu.ItemType.PLASTIC if item_type == "plastic" else mcu.ItemType.ALUMINUM)
         ])
-        if CONSIDER_ITEM_DROPPED:
-            self._session_stage = "await_item_drop"
-            return self._send(int(mcu.SessionControl.ACCEPT_ITEM), payload)
-
         ok = self._send(int(mcu.SessionControl.ACCEPT_ITEM), payload)
         if ok:
             self._session_stage = "active"
             if item_type == "plastic":
                 self.plasticAccepted.emit()
-                self._start_exit_gate_verification("plastic")
             else:
                 self.canAccepted.emit()
-                self._start_exit_gate_verification("can")
             self.conveyorDone.emit()
             self._restart_session_idle_timer()
-            self._log_session_event(direction="STATE", event_name="accept_completed_without_item_dropped", note=item_type)
+            self._clear_item_evidence()
+            self._log_session_event(direction="STATE", event_name="accept_completed", note=item_type)
         return ok
 
     def _start_reject_sequence(self) -> bool:
@@ -1679,7 +1594,7 @@ class AutoSerial(QObject):
 
     @Slot()
     def sendOpenDoor(self) -> None:
-        self.openGate()
+        self.doorToggle(1)
 
     @Slot()
     def closeDoor(self) -> None:
@@ -1687,8 +1602,17 @@ class AutoSerial(QObject):
 
     @Slot(int)
     def doorToggle(self, door_id: int) -> None:
-        self.logger.info(f"Door toggle {door_id} maps to START_SESSION in the new MCU protocol")
-        self._start_session_command()
+        door_commands = {
+            1: mcu.MaintenanceDoorControl.OPEN_DOOR_1,
+            2: mcu.MaintenanceDoorControl.OPEN_DOOR_2,
+            3: mcu.MaintenanceDoorControl.OPEN_DOOR_3,
+        }
+        command = door_commands.get(int(door_id))
+        if command is None:
+            self.logger.warning(f"Ignoring unknown maintenance door id: {door_id}")
+            return
+        self.logger.info(f"Opening maintenance door {door_id} with command 0x{int(command):02X}")
+        self._send(command)
 
     @Slot()
     def getDoorStatus(self) -> None:
@@ -1790,27 +1714,20 @@ class AutoSerial(QObject):
         self.ready.emit()
 
     def _dev_sim_accept(self, item_type: str) -> None:
-        """Simulate ACCEPT_ITEM + ITEM_DROPPED without serial port."""
+        """Simulate ACCEPT_ITEM without a serial port."""
         if self._session_stage != "active":
             self.logger.warning(f"[DEV_SIM] Cannot accept {item_type} - stage is {self._session_stage}, not 'active'")
             return
-        self.logger.info(f"[DEV_SIM] ACCEPT_ITEM({item_type}) -> simulating conveyor + sort")
-        self._session_stage = "await_item_drop"
-        self._log_session_event(direction="STATE", event_name=f"dev_sim_accept_{item_type}")
-        # Simulate item drop after 300ms
-        QTimer.singleShot(300, lambda: self._dev_sim_item_dropped(item_type))
-
-    def _dev_sim_item_dropped(self, item_type: str) -> None:
-        if self._session_stage != "await_item_drop":
-            return
-        self.logger.info(f"[DEV_SIM] ITEM_DROPPED ({item_type}) -> stage=active")
+        self.logger.info(f"[DEV_SIM] ACCEPT_ITEM({item_type}) -> stage=active")
         self._session_stage = "active"
-        self._log_session_event(direction="STATE", event_name=f"dev_sim_item_dropped_{item_type}")
+        self._log_session_event(direction="STATE", event_name=f"dev_sim_accept_{item_type}")
         if item_type == "plastic":
             self.plasticAccepted.emit()
         elif item_type == "can":
             self.canAccepted.emit()
         self.conveyorDone.emit()
+        self._clear_item_evidence()
+        self._restart_session_idle_timer()
 
     def _dev_sim_reject(self) -> None:
         """Simulate REJECT_ITEM without serial port."""
@@ -1843,7 +1760,7 @@ class AutoSerial(QObject):
         self.gateClosed.emit()
         self._end_session()
 
-    # NOTE: duplicate isProcessing removed — the authoritative definition is above
+    # NOTE: duplicate isProcessing removed - the authoritative definition is above
     # (line ~1458) and returns: stage not in {"connected", "disconnected"}
     # Python MRO means the LAST definition on the class wins, so the old duplicate
     # at this location was silently overriding the correct one (Bug 1).

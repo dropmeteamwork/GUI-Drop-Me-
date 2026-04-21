@@ -76,6 +76,9 @@ def test_invalid_crc_response_rejected():
         (mcu.ReadCommand.POLL_WEIGHT, b"", "aa 12 00 5d 40"),
         (mcu.SessionControl.ACCEPT_ITEM, bytes([int(mcu.ItemType.ALUMINUM)]), "aa 62 01 01 40 72"),
         (mcu.SessionControl.END_SESSION, b"", "aa 64 00 7b 20"),
+        (mcu.MaintenanceDoorControl.OPEN_DOOR_1, b"", "aa 65 00 7a b0"),
+        (mcu.MaintenanceDoorControl.OPEN_DOOR_2, b"", "aa 66 00 7a 40"),
+        (mcu.MaintenanceDoorControl.OPEN_DOOR_3, b"", "aa 67 00 7b d0"),
     ],
 )
 def test_selected_reference_examples(cmd, payload, expected_hex):

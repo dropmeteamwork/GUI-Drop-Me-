@@ -63,6 +63,9 @@ def _install_fake_pyside() -> list[str]:
         def setInterval(self, value):
             self._interval = int(value)
 
+        def interval(self):
+            return self._interval
+
         def start(self):
             self._active = True
 
